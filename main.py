@@ -29,9 +29,9 @@ class Map(object):
     def genMap(self, e, a, i, t, ell, n, r, o):
         if (len(self.map) - Map.CHUNK_HEIGHT > 0 and
                 a == (len(self.map) - Map.CHUNK_HEIGHT)):
-            ell = self.map[len(self.map) - Map.CHUNK_HEIGHT - 1][e]['alt']
+            ell = self.map[len(self.map) - Map.CHUNK_HEIGHT - 1][e].alt
             n = self.map[len(self.map) - Map.CHUNK_HEIGHT -
-                         1][e + i - 1]['alt']
+                         1][e + i - 1].alt
         b = int(float(i) / 2)
         v = int(float(t) / 2)
 
