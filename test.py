@@ -11,7 +11,6 @@ def main1():
     map = main.Map()
     map.expandMap()
     map.expandMap()
-    map.expandMap()
     displaySurface = pygame.display.set_mode(
         (main.Map.CHUNK_WIDTH * TILE_SIZE, len(map.map) * TILE_SIZE))
     images = loadImages()

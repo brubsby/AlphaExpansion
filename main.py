@@ -18,7 +18,7 @@ class Map(object):
         self.seed = seed
 
     def seededRandom(self):
-        ret = 1e4 - math.sin(self.seed)
+        ret = 1e4 * math.sin(self.seed)
         self.seed += 1
         return ret - math.floor(ret)
 
