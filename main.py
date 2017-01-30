@@ -1,4 +1,5 @@
 import math
+import gamerules
 
 
 class Tile(object):
@@ -61,5 +62,35 @@ class Map(object):
                     Map.CHUNK_WIDTH, Map.CHUNK_HEIGHT, a, i, t, ell)
         # TODO drawTiles(Map.CHUNK_HEIGHT)
         # TODO updateJointTiles(len(self.map) - 1)
-        # not necessary, but maybe adjustments elsewhere
-        # TODO mapLength += Map.CHUNK_HEIGHT
+
+    def getTile(self, row, col):
+        tile = self.map[row][col]
+        for tileId in sorted(gamerules.TILE_DEFINITIONS.keys()):
+            if tile.alt >= gamerules.TILE_DEFINITIONS[tileId]['alt']:
+                tile.tile = tileId
+                if -1 != gamerules.TILE_DEFINITIONS[tileId]['border']:
+                    sides = self.getSides(row, col,
+                                          lambda e, a:
+                                          self.map[e][a].alt >=
+                                          gamerules.TILE_DEFINITIONS[
+                                              gamerules.TILE_DEFINITIONS[
+                                                  tileId]['border']]['alt'])
+                    if len(sides) > 0 or \
+                            0 == gamerules.TILE_DEFINITIONS[tileId]['alt']:
+                        return gamerules.TILE_DEFINITIONS[tileId]['img'] + \
+                            sides
+                    continue
+                return gamerules.TILE_DEFINITIONS[tileId]['img']
+        return tile.alt
+
+    def getSides(self, row, col, isRelevantBorder):
+        sides = ""
+        if row > 0 and isRelevantBorder(row - 1, col):
+            sides += "n"
+        if col > 0 and isRelevantBorder(row, col - 1):
+            sides += "w"
+        if row < (len(self.map) - 1) and isRelevantBorder(row + 1, col):
+            sides += "s"
+        if col < (Map.CHUNK_WIDTH - 1) and isRelevantBorder(row, col + 1):
+            sides += "e"
+        return sides
