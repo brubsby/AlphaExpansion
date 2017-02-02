@@ -156,10 +156,12 @@ BUILDING_DEFINITIONS = [  # renamed from bD
         'desc': "Stores and provides access to basic resources",
         'img': "box",
         'tile': 8,  # what tiles it can be buit on as a flag (8 = land)
+        # type 0: transfer building, 1: storage building,
+        # 2: resource gatherer, 3: resource sink
         'type': 1,
-        'priority': 0,
-        'transFlag': 55039,
-        'costDef': {
+        'priority': 0,  # sorted by which resources feed into what
+        'transFlag': 55039,  # resource mask this building transports
+        'costDef': {  # how much each upgrade costs amt * ipl ^ level
             1: {  # 1 = resource index
                 'amt': 10,
                 'ipl': 4
@@ -173,7 +175,7 @@ BUILDING_DEFINITIONS = [  # renamed from bD
         'tile': 8,
         'type': 0,
         'priority': 0,
-        'reach': 1,
+        'reach': 1,  # distance this transport tile (type 0) can reach
         'transFlag': 55039,
         'costDef': {
             2: {
@@ -195,10 +197,10 @@ BUILDING_DEFINITIONS = [  # renamed from bD
                 'ipl': 2.5
             }
         },
-        'incId': 2,
-        'incAmt': 1,
+        'incId': 2,  # income resource index
+        'incAmt': 1,  # income = incAmt * incIpl ^ level
         'incIpl': 2,
-        'decFlag': 0
+        'decFlag': 0  # 0 if no upkeep
     },
     {
         'name': "Woodcutter hut",
@@ -238,9 +240,9 @@ BUILDING_DEFINITIONS = [  # renamed from bD
         'incId': 4,
         'incAmt': 1,
         'incIpl': 2,
-        'decFlag': 1,
-        'decDef': {
-            1: {
+        'decFlag': 1,  # all active upkeep resource flags together
+        'decDef': {  # upkeep cost = amt * ipl ^ level
+            1: {  # upkeep resource id
                 'amt': 8,
                 'ipl': 2
             }
