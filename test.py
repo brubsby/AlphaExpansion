@@ -2,8 +2,16 @@ import main
 import traceback
 import pygame
 import os
+import unittest
 
 TILE_SIZE = 25
+
+
+class GenerateDefaultMap(unittest.TestCase):
+
+    def test(self):
+        map = main.Map()
+        map(lambda x: map.expandMap(), range(15))
 
 
 def main1():

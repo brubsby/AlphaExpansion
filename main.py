@@ -1,11 +1,27 @@
 import math
-import gamerules
+
+from gamerules import RESOURCE_DEFINITIONS
+from gamerules import TILE_DEFINITIONS
+from gamerules import BUILDING_DEFINITIONS
 
 
 class Tile(object):
 
-    def __init__(self, alt):
-        self.alt = alt
+    def __init__(self, altitude):
+        self.alt = altitude
+        self.tile,
+        self.y,
+        self.x,
+        self.extra,
+        self.build,
+        self.level,
+        self.buf,
+        self.net,
+        self.isGlobal,
+        self.eff,
+        self.ref
+
+    # def setBuilding(e, t, i):
 
 
 class Map(object):
@@ -65,22 +81,22 @@ class Map(object):
 
     def getTile(self, row, col):
         tile = self.map[row][col]
-        for tileId in sorted(gamerules.TILE_DEFINITIONS.keys()):
-            if tile.alt >= gamerules.TILE_DEFINITIONS[tileId]['alt']:
+        for tileId in sorted(TILE_DEFINITIONS.keys()):
+            if tile.alt >= TILE_DEFINITIONS[tileId]['alt']:
                 tile.tile = tileId
-                if -1 != gamerules.TILE_DEFINITIONS[tileId]['border']:
+                if -1 != TILE_DEFINITIONS[tileId]['border']:
                     sides = self.getSides(row, col,
                                           lambda e, a:
                                           self.map[e][a].alt >=
-                                          gamerules.TILE_DEFINITIONS[
-                                              gamerules.TILE_DEFINITIONS[
+                                          TILE_DEFINITIONS[
+                                              TILE_DEFINITIONS[
                                                   tileId]['border']]['alt'])
                     if len(sides) > 0 or \
-                            0 == gamerules.TILE_DEFINITIONS[tileId]['alt']:
-                        return gamerules.TILE_DEFINITIONS[tileId]['img'] + \
+                            0 == TILE_DEFINITIONS[tileId]['alt']:
+                        return TILE_DEFINITIONS[tileId]['img'] + \
                             sides
                     continue
-                return gamerules.TILE_DEFINITIONS[tileId]['img']
+                return TILE_DEFINITIONS[tileId]['img']
         return tile.alt
 
     def getSides(self, row, col, isRelevantBorder):
@@ -94,3 +110,94 @@ class Map(object):
         if col < (Map.CHUNK_WIDTH - 1) and isRelevantBorder(row, col + 1):
             sides += "e"
         return sides
+
+
+class Game:
+
+    def __init__(self, seed):
+        del self.map
+        self.opts = {
+            'useAlt': False,
+            'showLevel': False,
+            'showEff': False,
+            'showExtra': True,
+            'dontScroll': False
+        },
+        if self.buildings is not None:
+            for building in self.buildings:
+                building.removeBuilding()
+        for buildingId in BUILDING_DEFINITIONS:
+            if BUILDING_DEFINITIONS[buildingId]['type'] < 2:
+                BUILDING_DEFINITIONS[buildingId]['amt'] = 0
+        self.buildings = [],
+        self.map = Map(),
+        self.tick = 0
+        self.otick = 0
+        self.balance = {}
+        self.balDiff = {}
+        self.balDeficit = {}
+        for resourceId in RESOURCE_DEFINITIONS:
+            self.balance[resourceId] = 0
+            self.balDiff[resourceId] = 0
+            self.balDeficit[resourceId] = False
+        self.init = seed
+
+    def proceedTick(self):
+        e = {}
+        for a in RESOURCE_DEFINITIONS:
+            e[a] = self.balance[a]
+            self.balDeficit[a] = False
+        for building in self.buildings:
+            buildingDefinition = BUILDING_DEFINITIONS[building.build]
+            if 2 == buildingDefinition.type:
+                n = building.getIncAmt()
+                r = n
+                o = {}
+                if 0 != buildingDefinition.decFlag:
+                    s = 1
+                    for a in buildingDefinition.decDef:
+                        o[a] = building.getBufSize(a)
+                        s = math.min(building.buf[a] / o[a], s)
+                    r *= s
+                d = r
+                p = 0
+                while p < building.net.length and r > 0:
+                    u = building.net[p]
+                    c = BUILDING_DEFINITIONS[u.build]
+                    f = u.getBufSize(buildingDefinition.incId)
+                    u.buf[buildingDefinition.incId] += r,
+                    r = u.buf[buildingDefinition.incId] - f,
+                    u.buf[buildingDefinition.incId] = math.min(
+                        u.buf[buildingDefinition.incId], f)
+                    p += 1
+                r = math.max(r, 0)
+                if building.isGlobal or 3 == buildingDefinition.type:
+                    self.balance[buildingDefinition.incId] += r
+                    r = 0
+                b = building.eff
+                building.eff = (d - r) / n,
+                if self.opts['showEff'] and b != building.eff:
+                    pass  # drawContent(building.y, building.x),
+                if 0 != buildingDefinition.decFlag:
+                    for a in buildingDefinition.decDef:
+                        building.buf[a] -= o[a] * building.eff
+            elif 1 == buildingDefinition.type:
+                p = 0
+                while p < building.net.length:
+                    u = building.net[p]
+                    c = BUILDING_DEFINITIONS[u.build]
+                    for a in c.decDef:
+                        # this logic seems weird
+                        if buildingDefinition.transFlag & a:
+                            f = u.getBufSize(a)
+                            v = f - u.buf[a]
+                            if v > self.balance[a]:
+                                u.buf[a] += self.balance[a]
+                                self.balance[a] = 0
+                                self.balDeficit[a] = True
+                            else:
+                                u.buf[a] = f
+                                self.balance[a] -= v
+                    p += 1
+        for a in RESOURCE_DEFINITIONS:
+            self.balDiff[a] = self.balance[a] - e[a]
