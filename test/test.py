@@ -3,15 +3,27 @@ import traceback
 import pygame
 import os
 import unittest
+import json
+
 
 TILE_SIZE = 25
 
 
 class GenerateDefaultMap(unittest.TestCase):
 
-    def test(self):
-        map = main.Map()
-        map(lambda x: map.expandMap(), range(15))
+    def test_default_terrain_gen(self):
+        gamemap = main.Map()
+        for i in range(15):
+            gamemap.expandMap()
+
+        with open(os.path.join('test', 'map.json')) as data_file:
+            data = json.load(data_file)
+
+        for row in range(len(data)):
+            for col in range(len(data[0])):
+                gamemap.getTile(row, col)
+                self.assertEqual(
+                    gamemap.map[row][col].tile, data[row][col], msg="")
 
 
 def main1():
@@ -50,11 +62,3 @@ def loadImages():
             print('%s loaded as %s' %
                   (file_path, os.path.splitext(filename)[0]))
     return images
-
-
-try:
-    main1()
-except:
-    traceback.print_exc()
-finally:
-    input("Press Enter to continue...")

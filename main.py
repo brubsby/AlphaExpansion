@@ -9,17 +9,17 @@ class Tile(object):
 
     def __init__(self, altitude):
         self.alt = altitude
-        self.tile,
-        self.y,
-        self.x,
-        self.extra,
-        self.build,
-        self.level,
-        self.buf,
-        self.net,
-        self.isGlobal,
-        self.eff,
-        self.ref
+        # self.tile,
+        # self.y,
+        # self.x,
+        # self.extra,
+        # self.build,
+        # self.level,
+        # self.buf,
+        # self.net,
+        # self.isGlobal,
+        # self.eff,
+        # self.ref
 
     # def setBuilding(e, t, i):
 
