@@ -1,4 +1,8 @@
 import math
+import base64
+import json
+import time
+import sys
 
 from gamerules import RESOURCE_DEFINITIONS
 from gamerules import TILE_DEFINITIONS
@@ -130,9 +134,9 @@ class Game:
             if BUILDING_DEFINITIONS[buildingId]['type'] < 2:
                 BUILDING_DEFINITIONS[buildingId]['amt'] = 0
         self.buildings = [],
-        self.map = Map(),
+        self.map = Map(seed),
         self.tick = 0
-        self.otick = 0
+        self.otick = 0  # offline ticks
         self.balance = {}
         self.balDiff = {}
         self.balDeficit = {}
@@ -201,3 +205,79 @@ class Game:
                     p += 1
         for a in RESOURCE_DEFINITIONS:
             self.balDiff[a] = self.balance[a] - e[a]
+
+    def skipTicks(self, ticks):
+        self.otick += ticks
+        a = []
+        for building in self.buildings:
+            if BUILDING_DEFINITIONS[building.build].type == 3:
+                row = building.y
+                col = building.x
+                a.append({
+                    'y': row,
+                    'x': col,
+                    'id': building.build})
+                self.map[row][col].sellBuilding()
+        ticksToProcess = ticks
+        while ticksToProcess > 0:
+            innerTicks = 0
+            while innerTicks < 5 and ticksToProcess > 0:
+                self.proceedTick()
+                innerTicks += 1
+                ticks -= 1
+            r = sys.maxint
+            for resourceId in RESOURCE_DEFINITIONS:
+                if self.balDiff[resourceId] < 0:
+                    r = math.min(math.floor(
+                        self.balance[resourceId] /
+                        math.abs(self.balDiff[resourceId])))
+                    s = math.min(ticksToProcess, r)
+            for resourceId in RESOURCE_DEFINITIONS:
+                self.balance[resourceId] += self.balanceDiff[resourceId] * s
+            ticksToProcess -= s
+        for tile in a:
+            # original code simulates a click, this might not do the needful
+            self.map[tile.y][tile.x].setBuilding(tile.y, tile.x, tile.id)
+        # updateUI()
+
+    def convertSaveStringToJSON(saveString):
+        return json.loads(
+            base64.b64decode(saveString.encode('utf-8')).decode('utf-8'))
+
+    def loadGame(saveString, **kwargs):
+        data = Game.convertSaveStringToJSON(saveString)
+        # some versioning logic purposefully omitted
+        game = Game(data.seed)
+        game.tick = data.tick
+        game.otick = data.otick
+        for opt in data.opts:
+            game.opts[opt] = data.opts[opt]
+        for resourceId in data.bal:
+            game.balance[resourceId] = data.bal[resourceId]
+        while len(game.map) < data.ml:
+            game.map.expandMap()
+        for tile in data.map:
+            row = tile['y']
+            col = tile['x']
+            game.map[row][col].setBuilding(row, col, tile['build'])
+            game.map[row][col].level = tile['level']
+            game.map[row][col].buf = tile['buf']
+            game.buildings.append(game.map[row][col])
+        for building in game.buildings:
+            buildingDefinition = BUILDING_DEFINITIONS[building.build]
+            if buildingDefinition['type'] == 0:
+                if buildingDefinition['reach'] > 1:
+                    # wideDraw(building.y, building.x,
+                    #          buildingDefinition['reach'])
+                    pass
+                else:
+                    # drawContent(building.y, building.x)
+                    pass
+            else:
+                # linkall(building.y, building.x, [])
+                pass
+        game.sortBuildings()
+        if kwargs.get('skip', True):
+            secondsSinceSave = math.floor(time.time() - data["time"])
+            game.skipTicks(secondsSinceSave)
+        return game
