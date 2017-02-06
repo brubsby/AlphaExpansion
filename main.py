@@ -25,17 +25,14 @@ class Tile(object):
         # self.eff,
         # self.ref
 
-    # def setBuilding(e, t, i):
-
 
 class Map(object):
 
-    CHUNK_WIDTH = 28
-    CHUNK_HEIGHT = 16
-
-    def __init__(self, seed=0):
+    def __init__(self, seed=0, chunkWidth=28, chunkHeight=16):
         self.map = []
         self.seed = seed
+        self.CHUNK_WIDTH = chunkWidth
+        self.CHUNK_HEIGHT = chunkHeight
 
     def seededRandom(self):
         ret = 1e4 * math.sin(self.seed)
@@ -47,17 +44,18 @@ class Map(object):
                           (maximum - minimum + 1)) + minimum
 
     def genMap(self, e, a, i, t, ell, n, r, o):
-        if (len(self.map) - Map.CHUNK_HEIGHT > 0 and
-                a == (len(self.map) - Map.CHUNK_HEIGHT)):
-            ell = self.map[len(self.map) - Map.CHUNK_HEIGHT - 1][e].alt
-            n = self.map[len(self.map) - Map.CHUNK_HEIGHT -
+        if (len(self.map) - self.CHUNK_HEIGHT > 0 and
+                a == (len(self.map) - self.CHUNK_HEIGHT)):
+            ell = self.map[len(self.map) -
+                           self.CHUNK_HEIGHT - 1][e].alt
+            n = self.map[len(self.map) - self.CHUNK_HEIGHT -
                          1][e + i - 1].alt
         b = int(float(i) / 2)
         v = int(float(t) / 2)
 
         if i > 1 or t > 1:
             f = (self.seededRandom() - 0.5)
-            f *= (b + v) / (Map.CHUNK_WIDTH + Map.CHUNK_HEIGHT) * 10
+            f *= (b + v) / (self.CHUNK_WIDTH + self.CHUNK_HEIGHT) * 10
             c = (ell + n + r + o) / 4 + f
             c = 1 if c > 1 else (0 if 0 > c else c)
             s = (ell + n) / 2
@@ -72,15 +70,15 @@ class Map(object):
             self.map[a][e] = Tile((ell + n + r + o) / 4)
 
     def expandMap(self):
-        for i in range(Map.CHUNK_HEIGHT):
-            self.map.append([None] * Map.CHUNK_WIDTH)
+        for i in range(self.CHUNK_HEIGHT):
+            self.map.append([None] * self.CHUNK_WIDTH)
         a = self.seededRandom()
         i = self.seededRandom()
         t = self.seededRandom()
         ell = self.seededRandom()
-        self.genMap(0, len(self.map) - Map.CHUNK_HEIGHT,
-                    Map.CHUNK_WIDTH, Map.CHUNK_HEIGHT, a, i, t, ell)
-        # TODO drawTiles(Map.CHUNK_HEIGHT)
+        self.genMap(0, len(self.map) - self.CHUNK_HEIGHT,
+                    self.CHUNK_WIDTH, self.CHUNK_HEIGHT, a, i, t, ell)
+        # TODO drawTiles(self.CHUNK_HEIGHT)
         # TODO updateJointTiles(len(self.map) - 1)
 
     def getTile(self, row, col):
@@ -111,30 +109,31 @@ class Map(object):
             sides += "w"
         if row < (len(self.map) - 1) and isRelevantBorder(row + 1, col):
             sides += "s"
-        if col < (Map.CHUNK_WIDTH - 1) and isRelevantBorder(row, col + 1):
+        if col < (self.CHUNK_WIDTH - 1) and isRelevantBorder(row, col + 1):
             sides += "e"
         return sides
 
 
 class Game:
 
-    def __init__(self, seed):
-        del self.map
+    def __init__(self, seed=0):
+        if hasattr(self, "map"):
+            del self.map
         self.opts = {
             'useAlt': False,
             'showLevel': False,
             'showEff': False,
             'showExtra': True,
             'dontScroll': False
-        },
-        if self.buildings is not None:
+        }
+        if hasattr(self, 'buildings'):
             for building in self.buildings:
                 building.removeBuilding()
-        for buildingId in BUILDING_DEFINITIONS:
-            if BUILDING_DEFINITIONS[buildingId]['type'] < 2:
-                BUILDING_DEFINITIONS[buildingId]['amt'] = 0
-        self.buildings = [],
-        self.map = Map(seed),
+        for buildingDefinition in BUILDING_DEFINITIONS:
+            if buildingDefinition['type'] < 2:
+                buildingDefinition['amt'] = 0
+        self.buildings = []
+        self.map = Map(seed)
         self.tick = 0
         self.otick = 0  # offline ticks
         self.balance = {}
@@ -217,7 +216,7 @@ class Game:
                     'y': row,
                     'x': col,
                     'id': building.build})
-                self.map[row][col].sellBuilding()
+                self.map.map[row][col].sellBuilding()
         ticksToProcess = ticks
         while ticksToProcess > 0:
             innerTicks = 0
@@ -237,7 +236,7 @@ class Game:
             ticksToProcess -= s
         for tile in a:
             # original code simulates a click, this might not do the needful
-            self.map[tile.y][tile.x].setBuilding(tile.y, tile.x, tile.id)
+            self.map.map[tile.y][tile.x].setBuilding(tile.y, tile.x, tile.id)
         # updateUI()
 
     def convertSaveStringToJSON(saveString):
@@ -247,23 +246,24 @@ class Game:
     def loadGame(saveString, **kwargs):
         data = Game.convertSaveStringToJSON(saveString)
         # some versioning logic purposefully omitted
-        game = Game(data.seed)
-        game.tick = data.tick
-        game.otick = data.otick
-        for opt in data.opts:
-            game.opts[opt] = data.opts[opt]
-        for resourceId in data.bal:
-            game.balance[resourceId] = data.bal[resourceId]
-        while len(game.map) < data.ml:
+        game = Game(data['seed'])
+        game.tick = data['tick']
+        game.otick = data['otick']
+        for opt in data['opts']:
+            game.opts[opt] = data['opts'][opt]
+        for resourceId in data['bal']:
+            game.balance[resourceId] = data['bal'][resourceId]
+        while len(game.map.map) < data['ml']:
             game.map.expandMap()
-        for tile in data.map:
+        for tile in data['map']:
             row = tile['y']
             col = tile['x']
-            game.map[row][col].setBuilding(row, col, tile['build'])
-            game.map[row][col].level = tile['level']
-            game.map[row][col].buf = tile['buf']
-            game.buildings.append(game.map[row][col])
+            game.map.map[row][col].setBuilding(row, col, tile['build'])
+            game.map.map[row][col].level = tile['level']
+            game.map.map[row][col].buf = tile['buf']
+            game.buildings.append(game.map.map[row][col])
         for building in game.buildings:
+            print(building)
             buildingDefinition = BUILDING_DEFINITIONS[building.build]
             if buildingDefinition['type'] == 0:
                 if buildingDefinition['reach'] > 1:
@@ -274,10 +274,82 @@ class Game:
                     # drawContent(building.y, building.x)
                     pass
             else:
-                # linkall(building.y, building.x, [])
-                pass
+                game.linkall(building.y, building.x, [])
         game.sortBuildings()
         if kwargs.get('skip', True):
             secondsSinceSave = math.floor(time.time() - data["time"])
             game.skipTicks(secondsSinceSave)
         return game
+
+    def getSortedList(y, x, toSort):
+        def tileComparator(tile1, tile2):
+            tile1Dist = math.sqrt(math.pow(tile1.y - y, 2) +
+                                  math.pow(tile1.x - x, 2))
+            tile2Dist = math.sqrt(math.pow(tile2.y - y, 2) +
+                                  math.pow(tile2.x - x, 2))
+            return tile1Dist - tile2Dist or \
+                tile1.y - tile2.y or \
+                tile1.x - tile2.x
+        return sorted(toSort, cmp=tileComparator)
+
+    def wideCall(self, y, x, func, net):
+        func(y - 1, x, net)
+        func(y, x - 1, net)
+        func(y + 1, x, net)
+        func(y, x + 1, net)
+        if 0 == BUILDING_DEFINITIONS[self.map.map[y][x].build]['type'] and \
+                BUILDING_DEFINITIONS[self.map.map[y][x]]['reach'] > 1:
+            reach = BUILDING_DEFINITIONS[self.map.map[y][x].build]['reach']
+            for n in range(2, reach + 1):
+                if hasattr(self.map.map[y - n][x], 'build') and \
+                        self.map.map[y - n][x].build == \
+                        self.map.map[y][x].build:
+                    func(y - n, x, net)
+                    break
+            for n in range(2, reach + 1):
+                if hasattr(self.map.map[y][x - n], 'build') and \
+                        self.map.map[y][x - n].build == \
+                        self.map.map[y][x].build:
+                    func(y, x - n, net)
+                    break
+            for n in range(2, reach + 1):
+                if hasattr(self.map.map[y + n][x], 'build') and \
+                        self.map.map[y + n][x].build == \
+                        self.map.map[y][x].build:
+                    func(y + n, x, net)
+                    break
+            for n in range(2, reach + 1):
+                if hasattr(self.map.map[y][x + n], 'build') and \
+                        self.map.map[y][x + n].build == \
+                        self.map.map[y][x].build:
+                    func(y, x + n, net)
+                    break
+
+    def linkall(self, y, x, i):
+        if y >= 0 and len(self.map.map) > y and \
+                x >= 0 and x < self.map.map.CHUNK_WIDTH and \
+                hasattr(self.map.map[y][x], 'build') and \
+                self.map.map[y][x] not in i:
+            i.append(self.map.map[y][x])
+            buildingDefinition = BUILDING_DEFINITIONS[self.map.map[y][x].build]
+            if buildingDefinition['type'] == 0:  # if transfer building
+                self.wideCall(y, x, self.linkAll, i)
+            elif buildingDefinition['type'] == 1:  # if storage building
+                net = {
+                    'fab': [],
+                    'link': [],
+                    'trans': buildingDefinition.transFlag
+                }
+                self.wideCall(y, x, self.linkWH, net)
+                self.map.map[y][x].net = Game.getSortedList(y, x, net['fab'])
+                self.map.map[y][x].isGlobal = True
+            elif buildingDefinition['type'] == 2:  # if fabricator building
+                net = {
+                    'fab': [],
+                    'link': [],
+                    'res': buildingDefinition['incid'],
+                    'global': False
+                }
+                self.wideCall(y, x, self.linkFab, net)
+                self.map.map[y][x].net = Game.getSortedList(y, x, net['fab'])
+                self.map.map[y][x].isGlobal = net['global']

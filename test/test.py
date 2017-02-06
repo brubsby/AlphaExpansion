@@ -1,5 +1,4 @@
 import main
-import traceback
 import pygame
 import os
 import unittest
@@ -18,12 +17,15 @@ class GenerateDefaultMap(unittest.TestCase):
 
         with open(os.path.join('test', 'map.json')) as data_file:
             data = json.load(data_file)
-
         for row in range(len(data)):
             for col in range(len(data[0])):
                 gamemap.getTile(row, col)
                 self.assertEqual(
                     gamemap.map[row][col].tile, data[row][col], msg="")
+
+    def test_create_game(self):
+        game = main.Game()
+        self.assertIsNotNone(game)
 
 
 def main1():
