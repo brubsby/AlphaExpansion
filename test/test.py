@@ -27,6 +27,12 @@ class GenerateDefaultMap(unittest.TestCase):
         game = main.Game()
         self.assertIsNotNone(game)
 
+    def test_load_game(self):
+        with open(os.path.join('test', 'save.txt'), 'r') as savefile:
+            savestring = savefile.read()
+        game = main.Game.loadGame(savestring)
+        self.assertIsNotNone(game)
+
 
 def main1():
     pygame.init()

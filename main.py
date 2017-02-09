@@ -3,6 +3,7 @@ import base64
 import json
 import time
 import sys
+import functools
 
 from gamerules import RESOURCE_DEFINITIONS
 from gamerules import TILE_DEFINITIONS
@@ -24,6 +25,82 @@ class Tile(object):
         # self.isGlobal,
         # self.eff,
         # self.ref
+
+    def setBuilding(self, y, x, buildingId, mapToSet, game):
+        self.y = y
+        self.x = x
+        self.build = buildingId
+        self.level = 0
+        self.net = []
+        self.buf = {}
+        self.isGlobal = False
+        self.eff = 0
+        buildingDefinition = BUILDING_DEFINITIONS[buildingId]
+        if hasattr(buildingDefinition, 'decDef'):
+            for resourceId in buildingDefinition['decDef']:
+                self.buf[resourceId] = 0
+        if buildingDefinition['type'] == 0 and \
+                buildingDefinition['reach'] > 1:
+            vertical = buildingDefinition['img'] + "v"
+            horizontal = buildingDefinition['img'] + "h"
+            self.remExtra(vertical)
+            self.remExtra(horizontal)
+            distVector = self.getDistTo(buildingId,
+                                        buildingDefinition['reach'],
+                                        mapToSet)
+            yIndex = y - distVector['n']
+            while yIndex <= y + distVector['s']:
+                if hasattr(mapToSet.map[yIndex][x], 'build') and \
+                        mapToSet.map[yIndex][x].build != buildingId:
+                    mapToSet.map[yIndex][x].addExtra(vertical)
+                yIndex += 1
+            xIndex = x - distVector['w']
+            while xIndex <= x + distVector['e']:
+                if hasattr(mapToSet.map[y][xIndex], 'build') and \
+                        mapToSet.map[y][xIndex].build != buildingId:
+                    mapToSet.map[y][xIndex].addExtra(horizontal)
+                xIndex += 1
+            if buildingDefinition['type'] < 2:
+                pass
+        # increment game building counts
+
+    def addExtra(self, extra):
+        if not hasattr(self, 'extra'):
+            self.extra = []
+        if extra in self.extra:
+            self.extra.append(extra)
+
+    def remExtra(self, extra):
+        if hasattr(self, 'extra') and extra in self.extra:
+            self.extra.remove(extra)
+
+    def getDistTo(self, buildingId, reach, map):
+        dist = {'n': 0, 'w': 0, 's': 0, 'e': 0}
+        a = 1
+        while (reach >= a) and (self.y - a >= 0):
+            tile = map.map[self.y - a][self.x]
+            if hasattr(tile, 'build') and tile.build == buildingId:
+                dist['n'] = a
+            a += 1
+        a = 1
+        while (reach >= a) and (self.x - a >= 0):
+            tile = map.map[self.y][self.x - a]
+            if hasattr(tile, 'build') and tile.build == buildingId:
+                dist['w'] = a
+            a += 1
+        a = 1
+        while (reach >= a) and (self.y + a < len(map.map)):
+            tile = map.map[self.y + a][self.x]
+            if hasattr(tile, 'build') and tile.build == buildingId:
+                dist['s'] = a
+            a += 1
+        a = 1
+        while (reach >= a) and (self.x + a < map.CHUNK_WIDTH):
+            tile = map.map[self.y][self.x + a]
+            if hasattr(tile, 'build') and tile.build == buildingId:
+                dist['e'] = a
+            a += 1
+        return dist
 
 
 class Map(object):
@@ -209,7 +286,7 @@ class Game:
         self.otick += ticks
         a = []
         for building in self.buildings:
-            if BUILDING_DEFINITIONS[building.build].type == 3:
+            if BUILDING_DEFINITIONS[building.build]['type'] == 3:
                 row = building.y
                 col = building.x
                 a.append({
@@ -258,12 +335,12 @@ class Game:
         for tile in data['map']:
             row = tile['y']
             col = tile['x']
-            game.map.map[row][col].setBuilding(row, col, tile['build'])
+            game.map.map[row][col].setBuilding(
+                row, col, tile['build'], game.map, game)
             game.map.map[row][col].level = tile['level']
             game.map.map[row][col].buf = tile['buf']
             game.buildings.append(game.map.map[row][col])
         for building in game.buildings:
-            print(building)
             buildingDefinition = BUILDING_DEFINITIONS[building.build]
             if buildingDefinition['type'] == 0:
                 if buildingDefinition['reach'] > 1:
@@ -290,7 +367,7 @@ class Game:
             return tile1Dist - tile2Dist or \
                 tile1.y - tile2.y or \
                 tile1.x - tile2.x
-        return sorted(toSort, cmp=tileComparator)
+        return sorted(toSort, key=functools.cmp_to_key(tileComparator))
 
     def wideCall(self, y, x, func, net):
         func(y - 1, x, net)
@@ -298,27 +375,35 @@ class Game:
         func(y + 1, x, net)
         func(y, x + 1, net)
         if 0 == BUILDING_DEFINITIONS[self.map.map[y][x].build]['type'] and \
-                BUILDING_DEFINITIONS[self.map.map[y][x]]['reach'] > 1:
+                BUILDING_DEFINITIONS[self.map.map[y][x].build]['reach'] > 1:
             reach = BUILDING_DEFINITIONS[self.map.map[y][x].build]['reach']
             for n in range(2, reach + 1):
+                if not (y - n >= 0):
+                    break
                 if hasattr(self.map.map[y - n][x], 'build') and \
                         self.map.map[y - n][x].build == \
                         self.map.map[y][x].build:
                     func(y - n, x, net)
                     break
             for n in range(2, reach + 1):
+                if not (x - n >= 0):
+                    break
                 if hasattr(self.map.map[y][x - n], 'build') and \
                         self.map.map[y][x - n].build == \
                         self.map.map[y][x].build:
                     func(y, x - n, net)
                     break
             for n in range(2, reach + 1):
+                if not (len(self.map.map) > y + n):
+                    break
                 if hasattr(self.map.map[y + n][x], 'build') and \
                         self.map.map[y + n][x].build == \
                         self.map.map[y][x].build:
                     func(y + n, x, net)
                     break
             for n in range(2, reach + 1):
+                if not (self.map.CHUNK_WIDTH > x + n):
+                    break
                 if hasattr(self.map.map[y][x + n], 'build') and \
                         self.map.map[y][x + n].build == \
                         self.map.map[y][x].build:
@@ -327,9 +412,9 @@ class Game:
 
     def linkall(self, y, x, i):
         if y >= 0 and len(self.map.map) > y and \
-                x >= 0 and x < self.map.map.CHUNK_WIDTH and \
+                x >= 0 and x < self.map.CHUNK_WIDTH and \
                 hasattr(self.map.map[y][x], 'build') and \
-                self.map.map[y][x] not in i:
+                self.map.map[y][x] not in i:  # maybe this is wrong?
             i.append(self.map.map[y][x])
             buildingDefinition = BUILDING_DEFINITIONS[self.map.map[y][x].build]
             if buildingDefinition['type'] == 0:  # if transfer building
@@ -338,7 +423,7 @@ class Game:
                 net = {
                     'fab': [],
                     'link': [],
-                    'trans': buildingDefinition.transFlag
+                    'trans': buildingDefinition['transFlag']
                 }
                 self.wideCall(y, x, self.linkWH, net)
                 self.map.map[y][x].net = Game.getSortedList(y, x, net['fab'])
@@ -347,9 +432,56 @@ class Game:
                 net = {
                     'fab': [],
                     'link': [],
-                    'res': buildingDefinition['incid'],
+                    'res': buildingDefinition['incId'],
                     'global': False
                 }
                 self.wideCall(y, x, self.linkFab, net)
                 self.map.map[y][x].net = Game.getSortedList(y, x, net['fab'])
                 self.map.map[y][x].isGlobal = net['global']
+
+    def linkFab(self, y, x, i):
+        if y >= 0 and len(self.map.map) > y and \
+                x >= 0 and x < self.map.CHUNK_WIDTH:
+            tile = self.map.map[y][x]
+            if hasattr(tile, 'build'):
+                buildingId = tile.build
+                buildingDefinition = BUILDING_DEFINITIONS[buildingId]
+                if buildingDefinition['type'] == 0 and \
+                        buildingDefinition['transFlag'] & i['res'] and \
+                        tile not in i['link']:
+                    i['link'].append(tile)
+                    self.wideCall(y, x, self.linkFab, i)
+                elif buildingDefinition['type'] == 1 and \
+                        buildingDefinition['transFlag'] & i['res']:
+                    i['global'] = True
+                elif buildingDefinition['type'] > 1 and \
+                        0 != buildingDefinition['decFlag'] and \
+                        i['res'] not in buildingDefinition['decDef'] \
+                        and tile not in i['fab']:
+                    i['fab'].append(tile)
+
+    def linkWH(self, y, x, i):
+        if y >= 0 and len(self.map.map) > y and \
+                x >= 0 and x < self.map.CHUNK_WIDTH:
+            tile = self.map.map[y][x]
+            if hasattr(tile, 'build'):
+                buildingId = tile.build
+                buildingDefinition = BUILDING_DEFINITIONS[buildingId]
+                if buildingDefinition['type'] == 0 and \
+                        buildingDefinition['transFlag'] == i['trans'] and \
+                        tile not in i['link']:
+                    i['link'].append(tile)
+                    self.wideCall(y, x, self.linkWH, i)
+                elif buildingDefinition['type'] > 1 and \
+                        buildingDefinition['decFlag'] != 0 and \
+                        buildingDefinition['decFlag'] & i['trans'] and \
+                        tile not in i['fab']:
+                    i['fab'].append(tile)
+
+    def sortBuildings(self):
+        def buildingComparator(building1, building2):
+            return building2.isGlobal - building1.isGlobal or \
+                BUILDING_DEFINITIONS[building1.build]['priority'] - \
+                BUILDING_DEFINITIONS[building2.build]['priority'] or \
+                building1.y - building2.y or building1.x - building2.x
+        self.buildings.sort(key=functools.cmp_to_key(buildingComparator))
