@@ -62,7 +62,7 @@ class Tile(object):
                 xIndex += 1
             if buildingDefinition['type'] < 2:
                 pass
-        # increment game building counts
+        # TODO increment game building counts
 
     def addExtra(self, extra):
         if not hasattr(self, 'extra'):
@@ -257,7 +257,7 @@ class Game:
                 b = building.eff
                 building.eff = (d - r) / n,
                 if self.opts['showEff'] and b != building.eff:
-                    pass  # drawContent(building.y, building.x),
+                    pass  # TODO drawContent(building.y, building.x),
                 if 0 != buildingDefinition.decFlag:
                     for a in buildingDefinition.decDef:
                         building.buf[a] -= o[a] * building.eff
@@ -314,7 +314,7 @@ class Game:
         for tile in a:
             # original code simulates a click, this might not do the needful
             self.map.map[tile.y][tile.x].setBuilding(tile.y, tile.x, tile.id)
-        # updateUI()
+        # TODO updateUI()
 
     def convertSaveStringToJSON(saveString):
         return json.loads(
@@ -346,10 +346,10 @@ class Game:
                 if buildingDefinition['reach'] > 1:
                     # wideDraw(building.y, building.x,
                     #          buildingDefinition['reach'])
-                    pass
+                    pass  # TODO
                 else:
                     # drawContent(building.y, building.x)
-                    pass
+                    pass  # TODO
             else:
                 game.linkall(building.y, building.x, [])
         game.sortBuildings()
