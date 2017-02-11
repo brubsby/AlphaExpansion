@@ -178,17 +178,46 @@ class Map(object):
                 return TILE_DEFINITIONS[tileId]['img']
         return tile.alt
 
-    def getSides(self, row, col, isRelevantBorder):
+    def getSides(self, y, x, i):
         sides = ""
-        if row > 0 and isRelevantBorder(row - 1, col):
+        if y > 0 and i(y - 1, x):
             sides += "n"
-        if col > 0 and isRelevantBorder(row, col - 1):
+        if x > 0 and i(y, x - 1):
             sides += "w"
-        if row < (len(self.map) - 1) and isRelevantBorder(row + 1, col):
+        if y < (len(self.map) - 1) and i(y + 1, x):
             sides += "s"
-        if col < (self.CHUNK_WIDTH - 1) and isRelevantBorder(row, col + 1):
+        if x < (self.CHUNK_WIDTH - 1) and i(y, x + 1):
             sides += "e"
         return sides
+
+    def getFarSides(self, y, x, reach, t):
+        farSides = ""
+        for n in range(1, reach + 1):
+            if not (y - n >= 0):
+                break
+            if t(y - n, x):
+                farSides += "n"
+                break
+        for n in range(1, reach + 1):
+            if not (x - n >= 0):
+                break
+            if t(y, x - n):
+                farSides += "w"
+                break
+
+        for n in range(1, reach + 1):
+            if not (y + n < len(self.map)):
+                break
+            if t(y + n, x):
+                farSides += "s"
+                break
+        for n in range(1, reach + 1):
+            if not (x + n < self.CHUNK_WIDTH):
+                break
+            if t(y, x + n):
+                farSides += "e"
+                break
+        return farSides
 
 
 class Game:
@@ -485,3 +514,50 @@ class Game:
                 BUILDING_DEFINITIONS[building2.build]['priority'] or \
                 building1.y - building2.y or building1.x - building2.x
         self.buildings.sort(key=functools.cmp_to_key(buildingComparator))
+
+    def get_tile_layers(self, y, x):
+        # build a list of images to draw for this tile
+        layers = []
+        if not (y >= 0 and len(self.map.map) > y and
+                x >= 0 and x < self.map.CHUNK_WIDTH):
+            return layers
+        layers.append(('tile', self.map.getTile(y, x)))
+        tile = self.map.map[y][x]
+        if hasattr(tile, "build"):
+            buildingDefinition = BUILDING_DEFINITIONS[tile.build]
+            buildingImg = buildingDefinition['img']
+            if buildingDefinition['type'] == 0:
+                if buildingDefinition['reach'] == 1:
+                    def should_connect(y2, x2):
+                        tile2 = self.map.map[y2][x2]
+                        if hasattr(tile2, 'build'):
+                            buildingDefinition2 = BUILDING_DEFINITIONS[
+                                tile2.build]
+                            return ((buildingDefinition2['type'] < 2 and
+                                     buildingDefinition['transFlag'] ==
+                                     buildingDefinition2['transFlag']) or
+                                    buildingDefinition2['type'] == 2 and
+                                    (buildingDefinition['transFlag'] &
+                                     buildingDefinition2['decFlag'] or
+                                     buildingDefinition['transFlag'] &
+                                     buildingDefinition2['incId']) or
+                                    (buildingDefinition2['type'] == 3 and
+                                     buildingDefinition['transFlag'] &
+                                     buildingDefinition2['decFlag']))
+                        else:
+                            return False
+                    sides = self.map.getSides(y, x, should_connect)
+                else:
+                    def should_connect(y2, x2):
+                        tile2 = self.map.map[y2][x2]
+                        return hasattr(tile2, 'build') and \
+                            tile2.build == tile.build
+                    sides = self.map.getFarSides(y, x,
+                                                 buildingDefinition['reach'],
+                                                 should_connect)
+                buildingImg += sides
+            layers.append(('building', buildingImg))
+        if hasattr(tile, 'extra') and self.opts['showExtra']:
+            for extraImg in tile.extra:
+                layers.push(('building', extraImg))
+        return layers
