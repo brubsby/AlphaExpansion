@@ -49,8 +49,5 @@ Temporary Items
 # Python stuff
 *.pyc
 
-# Reference js files
-*.js
-
 # Scratch notes
 *.txt
