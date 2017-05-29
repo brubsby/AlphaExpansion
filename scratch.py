@@ -9,7 +9,7 @@ thisgame = main.Game()
 thisgame.map.expandMap()
 thisgame.proceedTick()
 thisdisplay.show_screen(thisgame)
-'
+
 with open(os.path.join('test', 'save.txt'), 'r') as savefile:
     savestring = savefile.read()
 thisgame = main.Game.loadGame(savestring)

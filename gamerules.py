@@ -22,6 +22,7 @@ def payFor(buildingId, balance):
         balance[resourceId] -= a['amt'] * math.pow(a['ipl'], buildingCount)
 
 
+# modifies balance collection
 def refundFor(buildingId, balance):
     buildingDefinition = BUILDING_DEFINITIONS[buildingId]
     if buildingDefinition['type'] < 2:
