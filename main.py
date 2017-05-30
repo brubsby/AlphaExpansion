@@ -137,11 +137,11 @@ class Tile(object):
         del self.eff
 
     def sellBuild(self, sell, game):
-        gamerules.refundFor(self.build, self.level, game.balance)
+        gamerules.refundFor(self.build, self.level, game)
         self.level -= 1
         if sell:
             while self.level >= 0:
-                gamerules.refundFor(self.build, self.level, game.balance)
+                gamerules.refundFor(self.build, self.level, game)
                 self.level -= 1
         if self.level < 0:
             t = BUILDING_DEFINITIONS[self.build]['reach'] if 0 == BUILDING_DEFINITIONS[self.build]['type'] else 1
@@ -660,7 +660,7 @@ class Game:
     def buy_building_or_click_terrain(self, a, i, building_id):
         if not hasattr(self.map.map[a][i], 'build'):
             if -1 != building_id and self.map.map[a][i].tile & BUILDING_DEFINITIONS[building_id]['tile'] and gamerules.isAffordable(building_id, 0, self.balance):
-                gamerules.payFor(building_id, 0, self.balance)
+                gamerules.payFor(building_id, 0, self)
                 self.map.map[a][i].setBuilding(a, i, building_id, self.map, self)
                 self.buildings.append(self.map.map[a][i])
                 self.wideLink(a, i, 1)
@@ -675,13 +675,13 @@ class Game:
 
     def upgrade_resource_gatherer(self, a, i, upgrade_all):
         if 2 == BUILDING_DEFINITIONS[self.map.map[a][i].build]['type'] and gamerules.isAffordable(self.map.map[a][i].build, self.map.map[a][i].level + 1):
-            gamerules.payFor(self.map.map[a][i].build, self.map.map[a][i].level + 1, self.balance)
+            gamerules.payFor(self.map.map[a][i].build, self.map.map[a][i].level + 1, self)
             self.map.map[a][i].level += 1
             if upgrade_all:
                 for l in self.buildings:
                     if (l.build == self.map.map[a][i].build):
                         while l.level < self.map.map[a][i].level and gamerules.isAffordable(l.build, l.level + 1, self.balance):
-                            gamerules.payFor(l.build, l.level + 1, self.balance),
+                            gamerules.payFor(l.build, l.level + 1, self),
                             l.level += 1
             # opts.showLevel && drawContent(buildings[l].y, buildings[l].x) # TODO
             # drawContent(a, i) # TODO

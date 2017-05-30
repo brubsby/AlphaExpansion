@@ -14,24 +14,23 @@ def isAffordable(buildingId, buildingAmt, balance):
 
 
 # modifies balance collection
-def payFor(buildingId, buildingAmt, balance):
-    global buildingCount
+def payFor(buildingId, t, game):
     buildingDefinition = BUILDING_DEFINITIONS[buildingId]
-    if buildingDefinition['type'] < 2: # TODO this part is wrong but idk what the original is doing
-        buildingCount = buildingAmt
+    if buildingDefinition['type'] < 2:
+        t = game.buildingAmts[buildingId]
     for resourceId in buildingDefinition['costDef']:
         a = buildingDefinition['costDef'][resourceId]
-        balance[resourceId] -= a['amt'] * math.pow(a['ipl'], buildingCount)
+        game.balance[resourceId] -= a['amt'] * math.pow(a['ipl'], t)
 
 
 # modifies balance collection
-def refundFor(buildingId, buildingAmt, balance):
+def refundFor(buildingId, t, game):
     buildingDefinition = BUILDING_DEFINITIONS[buildingId]
-    if buildingDefinition['type'] < 2:  # TODO this part is wrong but idk what the original is doing
-        buildingCount = buildingAmt - 1
+    if buildingDefinition['type'] < 2:
+        t = game.buildingAmts[buildingId] - 1
     for resourceId in buildingDefinition['costDef']:
         a = buildingDefinition['costDef'][resourceId]
-        balance[resourceId] += a['amt'] * math.pow(a['ipl'], buildingCount)
+        game.balance[resourceId] += a['amt'] * math.pow(a['ipl'], buildingCount)
 
 
 TILE_DEFINITIONS = {  # renamed from tD
@@ -158,7 +157,7 @@ BUILDING_DEFINITIONS = [  # renamed from bD
         'name': "Storage",
         'desc': "Stores and provides access to basic resources",
         'img': "box",
-        'tile': 8,  # what tiles it can be buit on as a flag (8 = land)
+        'tile': 8,  # what tiles it can be built on as a flag (8 = land)
         # type 0: transfer building, 1: storage building,
         # 2: resource gatherer, 3: resource sink
         'type': 1,

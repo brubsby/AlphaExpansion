@@ -66,7 +66,21 @@ class ExpansionTest(unittest.TestCase):
         game.sell_building(3, 6)
         game.sell_building(4, 5)
 
+        self.assertEqual(game.balance[1], 850)
+        self.assertEqual(game.balance[2], 850)
+
         game.proceedTick()
+
+        game.buy_building_or_click_terrain(3, 5, 0)
+        game.buy_building_or_click_terrain(3, 4, 0)
+        game.buy_building_or_click_terrain(2, 5, 0)
+        game.buy_building_or_click_terrain(2, 4, 0)
+
+        for i in range(1000):
+            game.proceedTick()
+
+        self.assertEqual(game.balance[1], 840)
+        self.assertEqual(game.balance[2], 850)
 
 
 
