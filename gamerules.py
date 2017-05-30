@@ -1,10 +1,11 @@
 import math
 
 
-def isAffordable(buildingId, balance):
+def isAffordable(buildingId, buildingAmt, balance):
+    global buildingCount
     buildingDefinition = BUILDING_DEFINITIONS[buildingId]
     if buildingDefinition['type'] < 2:
-        buildingCount = 0  # TODO: amount of buildings of type buildingid
+        buildingCount = buildingAmt
     for resourceId in buildingDefinition['costDef']:
         a = buildingDefinition['costDef'][resourceId]
         if balance[resourceId] < a['amt'] * math.pow(a['ipl'], buildingCount):
@@ -13,20 +14,21 @@ def isAffordable(buildingId, balance):
 
 
 # modifies balance collection
-def payFor(buildingId, balance):
+def payFor(buildingId, buildingAmt, balance):
+    global buildingCount
     buildingDefinition = BUILDING_DEFINITIONS[buildingId]
-    if buildingDefinition['type'] < 2:
-        buildingCount = 0  # TODO: amount of buildings of type buildingid
+    if buildingDefinition['type'] < 2: # TODO this part is wrong but idk what the original is doing
+        buildingCount = buildingAmt
     for resourceId in buildingDefinition['costDef']:
         a = buildingDefinition['costDef'][resourceId]
         balance[resourceId] -= a['amt'] * math.pow(a['ipl'], buildingCount)
 
 
 # modifies balance collection
-def refundFor(buildingId, balance):
+def refundFor(buildingId, buildingAmt, balance):
     buildingDefinition = BUILDING_DEFINITIONS[buildingId]
-    if buildingDefinition['type'] < 2:
-        buildingCount = 0 - 1  # TODO: amount of buildings of type buildingid
+    if buildingDefinition['type'] < 2:  # TODO this part is wrong but idk what the original is doing
+        buildingCount = buildingAmt - 1
     for resourceId in buildingDefinition['costDef']:
         a = buildingDefinition['costDef'][resourceId]
         balance[resourceId] += a['amt'] * math.pow(a['ipl'], buildingCount)
@@ -38,7 +40,7 @@ TILE_DEFINITIONS = {  # renamed from tD
         'img': "peak",
         'alt': .95,     # possibly probability of a tile
         'border': -1,   # -1 no border, 8 means beach border? deep water?
-        'res': 2        # ?
+        'res': 2        # what resource it gives you when you click it
     },
     2: {
         'name': "Mountain",

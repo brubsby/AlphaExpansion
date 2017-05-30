@@ -4,6 +4,7 @@ import json
 import time
 import sys
 import functools
+import gamerules
 
 from gamerules import RESOURCE_DEFINITIONS
 from gamerules import TILE_DEFINITIONS
@@ -61,8 +62,7 @@ class Tile(object):
                     mapToSet.map[y][xIndex].addExtra(horizontal)
                 xIndex += 1
             if buildingDefinition['type'] < 2:
-                pass
-        # TODO increment game building counts
+                game.buildingAmts[buildingId] += 1
 
     def addExtra(self, extra):
         if not hasattr(self, 'extra'):
@@ -101,6 +101,60 @@ class Tile(object):
                 dist['e'] = a
             a += 1
         return dist
+
+    # remove building from tile (but keep terrain underneath)
+    def remBuild(self, map, game):
+        if 0 == BUILDING_DEFINITIONS[self.build]['type'] and BUILDING_DEFINITIONS[self.build]['reach'] > 1:
+            e = BUILDING_DEFINITIONS[self.build]['img'] + "v"
+            t = BUILDING_DEFINITIONS[self.build]['img'] + "h"
+            i = self.getDistTo(self.build, BUILDING_DEFINITIONS[self.build]['reach'], map)
+            if 0 == i['n'] or 0 == i['s'] or i['n'] + i['s'] > BUILDING_DEFINITIONS[self.build]['reach']:
+                a = self.y - i['n']
+                while a <= self.y + i['s']:
+                    map[a][self.x].remExtra(e)
+                    a += 1
+            else:
+                self.addExtra(e)
+            if 0 == i['w'] or 0 == i['e'] or i['w'] + i['e'] > BUILDING_DEFINITIONS[self.build].reach:
+                r = self.x - i['w']
+                while r <= self.x + i['e']:
+                    map[self.y][r].remExtra(t)
+                    r += 1
+            else:
+                self.addExtra(t)
+        if BUILDING_DEFINITIONS[self.build]['type'] < 2:
+            game.buildingAmts[self.build] -= 1
+        if 3 == BUILDING_DEFINITIONS[self.build]['type']:
+            for s in BUILDING_DEFINITIONS[self.build]['decDef']:
+                game.balance[s] += self.buf[s]
+        del self.y
+        del self.x
+        del self.build
+        del self.level
+        del self.buf
+        del self.net
+        del self.isGlobal
+        del self.eff
+
+    def sellBuild(self, sell, game):
+        gamerules.refundFor(self.build, self.level, game.balance)
+        self.level -= 1
+        if sell:
+            while self.level >= 0:
+                gamerules.refundFor(self.build, self.level, game.balance)
+                self.level -= 1
+        if self.level < 0:
+            t = BUILDING_DEFINITIONS[self.build]['reach'] if 0 == BUILDING_DEFINITIONS[self.build]['type'] else 1
+            i = self.y
+            a = self.x
+            self.remBuild(game.map, game)
+            game.buildings.remove(self) # TODO does this work?
+            game.wideLink(i, a, t)
+            return t
+        return 1 if game.opts['showLevel'] else 0
+
+    def getIncAmt(self):
+        return BUILDING_DEFINITIONS[self.build]['incAmt'] * math.pow(BUILDING_DEFINITIONS[self.build]['incIpl'], self.level) if hasattr(self, 'build') and 2 == BUILDING_DEFINITIONS[self.build]['type'] else 0
 
 
 class Map(object):
@@ -155,6 +209,10 @@ class Map(object):
         ell = self.seededRandom()
         self.genMap(0, len(self.map) - self.CHUNK_HEIGHT,
                     self.CHUNK_WIDTH, self.CHUNK_HEIGHT, a, i, t, ell)
+        # classify tiles (in case not in graphics mode) before I implement drawTiles and updateJointTiles
+        for y in range(len(self.map)):
+            for x in range(self.CHUNK_WIDTH):
+                self.getTile(y, x)
         # TODO drawTiles(self.CHUNK_HEIGHT)
         # TODO updateJointTiles(len(self.map) - 1)
 
@@ -249,6 +307,7 @@ class Game:
             self.balance[resourceId] = 0
             self.balDiff[resourceId] = 0
             self.balDeficit[resourceId] = False
+        self.buildingAmts = [0] * len(BUILDING_DEFINITIONS)
         self.init = seed
 
     def proceedTick(self):
@@ -258,46 +317,46 @@ class Game:
             self.balDeficit[a] = False
         for building in self.buildings:
             buildingDefinition = BUILDING_DEFINITIONS[building.build]
-            if 2 == buildingDefinition.type:
+            if 2 == buildingDefinition['type']:
                 n = building.getIncAmt()
                 r = n
                 o = {}
-                if 0 != buildingDefinition.decFlag:
+                if 0 != buildingDefinition['decFlag']:
                     s = 1
-                    for a in buildingDefinition.decDef:
+                    for a in buildingDefinition['decDef']:
                         o[a] = building.getBufSize(a)
-                        s = math.min(building.buf[a] / o[a], s)
+                        s = min(building.buf[a] / o[a], s)
                     r *= s
                 d = r
                 p = 0
-                while p < building.net.length and r > 0:
+                while p < len(building.net) and r > 0:
                     u = building.net[p]
                     c = BUILDING_DEFINITIONS[u.build]
-                    f = u.getBufSize(buildingDefinition.incId)
-                    u.buf[buildingDefinition.incId] += r,
-                    r = u.buf[buildingDefinition.incId] - f,
-                    u.buf[buildingDefinition.incId] = math.min(
-                        u.buf[buildingDefinition.incId], f)
+                    f = u.getBufSize(buildingDefinition['incId'])
+                    u.buf[buildingDefinition['incId']] += r,
+                    r = u.buf[buildingDefinition['incId']] - f,
+                    u.buf[buildingDefinition['incId']] = min(
+                        u.buf[buildingDefinition['incId']], f)
                     p += 1
-                r = math.max(r, 0)
+                r = max(r, 0)
                 if building.isGlobal or 3 == buildingDefinition.type:
-                    self.balance[buildingDefinition.incId] += r
+                    self.balance[buildingDefinition['incId']] += r
                     r = 0
                 b = building.eff
                 building.eff = (d - r) / n,
                 if self.opts['showEff'] and b != building.eff:
                     pass  # TODO drawContent(building.y, building.x),
-                if 0 != buildingDefinition.decFlag:
-                    for a in buildingDefinition.decDef:
+                if 0 != buildingDefinition['decFlag']:
+                    for a in buildingDefinition['decDef']:
                         building.buf[a] -= o[a] * building.eff
-            elif 1 == buildingDefinition.type:
+            elif 1 == buildingDefinition['type']:
                 p = 0
-                while p < building.net.length:
+                while p < len(building.net):
                     u = building.net[p]
                     c = BUILDING_DEFINITIONS[u.build]
                     for a in c.decDef:
-                        # this logic seems weird
-                        if buildingDefinition.transFlag & a:
+                        # TODO this logic seems weird
+                        if buildingDefinition['transFlag'] & a:
                             f = u.getBufSize(a)
                             v = f - u.buf[a]
                             if v > self.balance[a]:
@@ -322,7 +381,7 @@ class Game:
                     'y': row,
                     'x': col,
                     'id': building.build})
-                self.map.map[row][col].sellBuilding()
+                self.map.map[row][col].sellBuild()
         ticksToProcess = ticks
         while ticksToProcess > 0:
             innerTicks = 0
@@ -330,15 +389,15 @@ class Game:
                 self.proceedTick()
                 innerTicks += 1
                 ticks -= 1
-            r = sys.maxint
+            r = sys.maxsize
             for resourceId in RESOURCE_DEFINITIONS:
                 if self.balDiff[resourceId] < 0:
-                    r = math.min(math.floor(
+                    r = min(math.floor(
                         self.balance[resourceId] /
-                        math.abs(self.balDiff[resourceId])))
-                    s = math.min(ticksToProcess, r)
+                        abs(self.balDiff[resourceId])))
+                    s = min(ticksToProcess, r)
             for resourceId in RESOURCE_DEFINITIONS:
-                self.balance[resourceId] += self.balanceDiff[resourceId] * s
+                self.balance[resourceId] += self.balDiff[resourceId] * s
             ticksToProcess -= s
         for tile in a:
             # original code simulates a click, this might not do the needful
@@ -398,6 +457,26 @@ class Game:
                 tile1.x - tile2.x
         return sorted(toSort, key=functools.cmp_to_key(tileComparator))
 
+    def wideLink(self, e, a, i):
+        t = []
+        self.linkall(e, a, t)
+        l = 1
+        while i >= l and e - l >= 0:
+            self.linkall(e - l, a, t)
+            l += 1
+        l = 1
+        while i >= l and a - l >= 0:
+            self.linkall(e, a - l, t)
+            l += 1
+        l = 1
+        while i >= l and len(self.map.map) > e + l:
+            self.linkall(e + l, a, t)
+            l += 1
+        l = 1
+        while i >= l and a + l < self.map.CHUNK_WIDTH:
+            self.linkall(e, a + l, t)
+            l += 1
+
     def wideCall(self, y, x, func, net):
         func(y - 1, x, net)
         func(y, x - 1, net)
@@ -447,7 +526,7 @@ class Game:
             i.append(self.map.map[y][x])
             buildingDefinition = BUILDING_DEFINITIONS[self.map.map[y][x].build]
             if buildingDefinition['type'] == 0:  # if transfer building
-                self.wideCall(y, x, self.linkAll, i)
+                self.wideCall(y, x, self.linkall, i)
             elif buildingDefinition['type'] == 1:  # if storage building
                 net = {
                     'fab': [],
@@ -561,3 +640,64 @@ class Game:
             for extraImg in tile.extra:
                 layers.push(('building', extraImg))
         return layers
+
+    def downgrade_building(self, a, i):
+        d = self.map.map[a][i].sellBuild(False, self)
+        # wideDraw(a, i, d) # TODO
+
+    def sell_building(self, a, i):
+        d = self.map.map[a][i].sellBuild(True, self)
+        # wideDraw(a, i, d) # TODO
+
+    def sell_all_buildings_of_type(self, building_id):
+        for i in reversed(range(len(self.buildings))):
+            if self.buildings[i].build == building_id:
+                y = self.buildings[i].y
+                x = self.buildings[i].x
+                d = self.map.map[y][x].sellBuild(True, self)
+                # wideDraw(y, x, d) # TODO
+
+    def buy_building_or_click_terrain(self, a, i, building_id):
+        if not hasattr(self.map.map[a][i], 'build'):
+            if -1 != building_id and self.map.map[a][i].tile & BUILDING_DEFINITIONS[building_id]['tile'] and gamerules.isAffordable(building_id, 0, self.balance):
+                gamerules.payFor(building_id, 0, self.balance)
+                self.map.map[a][i].setBuilding(a, i, building_id, self.map, self)
+                self.buildings.append(self.map.map[a][i])
+                self.wideLink(a, i, 1)
+                self.sortBuildings()
+                t = BUILDING_DEFINITIONS[building_id]['reach'] if 0 == BUILDING_DEFINITIONS[building_id]['type'] else 1
+                # wideDraw(a, i, t) # TODO
+                # updateUI() # TODO
+            else:
+                if -1 != TILE_DEFINITIONS[self.map.map[a][i].tile]['res']:
+                    self.balance[TILE_DEFINITIONS[self.map.map[a][i].tile]['res']] += 1
+                    # updateUI() # TODO
+
+    def upgrade_resource_gatherer(self, a, i, upgrade_all):
+        if 2 == BUILDING_DEFINITIONS[self.map.map[a][i].build]['type'] and gamerules.isAffordable(self.map.map[a][i].build, self.map.map[a][i].level + 1):
+            gamerules.payFor(self.map.map[a][i].build, self.map.map[a][i].level + 1, self.balance)
+            self.map.map[a][i].level += 1
+            if upgrade_all:
+                for l in self.buildings:
+                    if (l.build == self.map.map[a][i].build):
+                        while l.level < self.map.map[a][i].level and gamerules.isAffordable(l.build, l.level + 1, self.balance):
+                            gamerules.payFor(l.build, l.level + 1, self.balance),
+                            l.level += 1
+            # opts.showLevel && drawContent(buildings[l].y, buildings[l].x) # TODO
+            # drawContent(a, i) # TODO
+            # updateUI() # TODO
+
+    def activate_resource_sink(self, a, i):
+        if 3 == BUILDING_DEFINITIONS[self.map.map[a][i].build]['type']:
+            n = 1
+            for r in BUILDING_DEFINITIONS[self.map.map[a][i].build]['decDef']:
+                o = self.map.map[a][i].buf[r]
+                s = self.map.map[a][i].getBufSize(r)
+                n = min(o / s, n)
+            if 1 == n:
+                for r in self.map.map[a][i].buf:
+                    self.map.map[a][i].buf[r] = 0
+                # BUILDING_DEFINITIONS[self.map.map[a][i].build]['fn']  # execute
+                # could try to do weird python method name execution but all buildings have null or this function
+                self.map.expandMap()
+
