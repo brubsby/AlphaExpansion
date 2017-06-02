@@ -329,31 +329,34 @@ class Game:
                 if 0 != buildingDefinition['decFlag']:
                     s = 1
                     for a in buildingDefinition['decDef']:
-                        o[a] = building.getBufSize(a)
-                        s = min(building.buf[a] / o[a], s)
+                        astring = str(a)
+                        o[a] = building.getBufSize(a, self.map)
+                        s = min(building.buf[astring] / o[a], s)
                     r *= s
                 d = r
                 p = 0
                 while p < len(building.net) and r > 0:
                     u = building.net[p]
                     c = BUILDING_DEFINITIONS[u.build]
-                    f = u.getBufSize(buildingDefinition['incId'])
-                    u.buf[buildingDefinition['incId']] += r,
-                    r = u.buf[buildingDefinition['incId']] - f,
-                    u.buf[buildingDefinition['incId']] = min(
-                        u.buf[buildingDefinition['incId']], f)
+                    f = u.getBufSize(buildingDefinition['incId'], self.map)
+                    incIdString = str(buildingDefinition['incId'])
+                    u.buf[incIdString] += r,
+                    r = u.buf[incIdString] - f,
+                    u.buf[incIdString] = min(
+                        u.buf[incIdString], f)
                     p += 1
                 r = max(r, 0)
                 if building.isGlobal or 3 == buildingDefinition.type:
                     self.balance[buildingDefinition['incId']] += r
                     r = 0
                 b = building.eff
-                building.eff = (d - r) / n,
+                building.eff = (d - r) / n
                 if self.opts['showEff'] and b != building.eff:
                     pass  # TODO drawContent(building.y, building.x),
                 if 0 != buildingDefinition['decFlag']:
                     for a in buildingDefinition['decDef']:
-                        building.buf[a] -= o[a] * building.eff
+                        astring = str(a)
+                        building.buf[astring] -= o[a] * building.eff
             elif 1 == buildingDefinition['type']:
                 p = 0
                 while p < len(building.net):
@@ -361,15 +364,16 @@ class Game:
                     c = BUILDING_DEFINITIONS[u.build]
                     for a in c['decDef']:
                         # TODO this logic seems weird
+                        astring = str(a)
                         if buildingDefinition['transFlag'] & a:
                             f = u.getBufSize(a, self.map)
-                            v = f - u.buf[a]
+                            v = f - u.buf[astring]
                             if v > self.balance[a]:
-                                u.buf[a] += self.balance[a]
+                                u.buf[astring] += self.balance[a]
                                 self.balance[a] = 0
                                 self.balDeficit[a] = True
                             else:
-                                u.buf[a] = f
+                                u.buf[astring] = f
                                 self.balance[a] -= v
                     p += 1
         for a in RESOURCE_DEFINITIONS:
@@ -697,7 +701,7 @@ class Game:
             n = 1
             for r in BUILDING_DEFINITIONS[self.map.map[a][i].build]['decDef']:
                 o = self.map.map[a][i].buf[r]
-                s = self.map.map[a][i].getBufSize(r)
+                s = self.map.map[a][i].getBufSize(r, self.map)
                 n = min(o / s, n)
             if 1 == n:
                 for r in self.map.map[a][i].buf:

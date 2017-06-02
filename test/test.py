@@ -29,11 +29,12 @@ class ExpansionTest(unittest.TestCase):
         game = main.Game()
         self.assertIsNotNone(game)
 
-    def slow_test_load_game(self):
+    def test_load_game(self):
         with open(os.path.join('test', 'save.txt'), 'r') as savefile:
             savestring = savefile.read()
         game = main.Game.loadGame(savestring)
         self.assertIsNotNone(game)
+        game.proceedTick()
 
     # play some ticks and do some stuff
     def test_simple_game(self):
