@@ -156,6 +156,11 @@ class Tile(object):
     def getIncAmt(self):
         return BUILDING_DEFINITIONS[self.build]['incAmt'] * math.pow(BUILDING_DEFINITIONS[self.build]['incIpl'], self.level) if hasattr(self, 'build') and 2 == BUILDING_DEFINITIONS[self.build]['type'] else 0
 
+    def getBufSize(self, e, map):
+        if hasattr(self, 'build') and BUILDING_DEFINITIONS[self.build]['type'] > 1 and e in BUILDING_DEFINITIONS[self.build]['decDef']:
+            return BUILDING_DEFINITIONS[self.build]['decDef'][e]['amt'] * pow(BUILDING_DEFINITIONS[self.build]['decDef'][e]['ipl'], (len(map.map) / map.CHUNK_HEIGHT - 1) if 3 == BUILDING_DEFINITIONS[self.build]['type'] else self.level)
+        else:
+            return 0
 
 class Map(object):
 
@@ -354,10 +359,10 @@ class Game:
                 while p < len(building.net):
                     u = building.net[p]
                     c = BUILDING_DEFINITIONS[u.build]
-                    for a in c.decDef:
+                    for a in c['decDef']:
                         # TODO this logic seems weird
                         if buildingDefinition['transFlag'] & a:
-                            f = u.getBufSize(a)
+                            f = u.getBufSize(a, self.map)
                             v = f - u.buf[a]
                             if v > self.balance[a]:
                                 u.buf[a] += self.balance[a]
