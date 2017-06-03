@@ -340,8 +340,8 @@ class Game:
                     c = BUILDING_DEFINITIONS[u.build]
                     f = u.getBufSize(buildingDefinition['incId'], self.map)
                     incIdString = str(buildingDefinition['incId'])
-                    u.buf[incIdString] += r,
-                    r = u.buf[incIdString] - f,
+                    u.buf[incIdString] += r
+                    r = u.buf[incIdString] - f
                     u.buf[incIdString] = min(
                         u.buf[incIdString], f)
                     p += 1
