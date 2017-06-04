@@ -80,7 +80,7 @@ class ExpansionTest(unittest.TestCase):
         for i in range(1000):
             game.proceedTick()
 
-        self.assertEqual(game.balance[1], 840)
+        self.assertEqual(game.balance[1], 0)
         self.assertEqual(game.balance[2], 850)
 
 

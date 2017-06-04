@@ -1,4 +1,5 @@
 import math
+import functools
 
 
 def isAffordable(buildingId, buildingAmt, balance):
@@ -31,6 +32,17 @@ def refundFor(buildingId, t, game):
     for resourceId in buildingDefinition['costDef']:
         a = buildingDefinition['costDef'][resourceId]
         game.balance[resourceId] += a['amt'] * math.pow(a['ipl'], buildingCount)
+
+def getSortedList(y, x, toSort):
+    def tileComparator(tile1, tile2):
+        tile1Dist = math.sqrt(math.pow(tile1.y - y, 2) +
+                              math.pow(tile1.x - x, 2))
+        tile2Dist = math.sqrt(math.pow(tile2.y - y, 2) +
+                              math.pow(tile2.x - x, 2))
+        return tile1Dist - tile2Dist or \
+            tile1.y - tile2.y or \
+            tile1.x - tile2.x
+    return sorted(toSort, key=functools.cmp_to_key(tileComparator))
 
 
 TILE_DEFINITIONS = {  # renamed from tD

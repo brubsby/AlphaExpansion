@@ -156,9 +156,9 @@ class Tile(object):
     def getIncAmt(self):
         return BUILDING_DEFINITIONS[self.build]['incAmt'] * math.pow(BUILDING_DEFINITIONS[self.build]['incIpl'], self.level) if hasattr(self, 'build') and 2 == BUILDING_DEFINITIONS[self.build]['type'] else 0
 
-    def getBufSize(self, e, map):
-        if hasattr(self, 'build') and BUILDING_DEFINITIONS[self.build]['type'] > 1 and e in BUILDING_DEFINITIONS[self.build]['decDef']:
-            return BUILDING_DEFINITIONS[self.build]['decDef'][e]['amt'] * pow(BUILDING_DEFINITIONS[self.build]['decDef'][e]['ipl'], (len(map.map) / map.CHUNK_HEIGHT - 1) if 3 == BUILDING_DEFINITIONS[self.build]['type'] else self.level)
+    def getBufSize(self, resourceId, map):
+        if hasattr(self, 'build') and BUILDING_DEFINITIONS[self.build]['type'] > 1 and resourceId in BUILDING_DEFINITIONS[self.build]['decDef']:
+            return BUILDING_DEFINITIONS[self.build]['decDef'][resourceId]['amt'] * pow(BUILDING_DEFINITIONS[self.build]['decDef'][resourceId]['ipl'], (len(map.map) / map.CHUNK_HEIGHT - 1) if 3 == BUILDING_DEFINITIONS[self.build]['type'] else self.level)
         else:
             return 0
 
@@ -426,7 +426,7 @@ class Game:
         for opt in data['opts']:
             game.opts[opt] = data['opts'][opt]
         for resourceId in data['bal']:
-            game.balance[resourceId] = data['bal'][resourceId]
+            game.balance[int(resourceId)] = data['bal'][resourceId]
         while len(game.map.map) < data['ml']:
             game.map.expandMap()
         for tile in data['map']:
@@ -454,17 +454,6 @@ class Game:
             secondsSinceSave = math.floor(time.time() - data["time"])
             game.skipTicks(secondsSinceSave)
         return game
-
-    def getSortedList(y, x, toSort):
-        def tileComparator(tile1, tile2):
-            tile1Dist = math.sqrt(math.pow(tile1.y - y, 2) +
-                                  math.pow(tile1.x - x, 2))
-            tile2Dist = math.sqrt(math.pow(tile2.y - y, 2) +
-                                  math.pow(tile2.x - x, 2))
-            return tile1Dist - tile2Dist or \
-                tile1.y - tile2.y or \
-                tile1.x - tile2.x
-        return sorted(toSort, key=functools.cmp_to_key(tileComparator))
 
     def wideLink(self, e, a, i):
         t = []
@@ -543,7 +532,7 @@ class Game:
                     'trans': buildingDefinition['transFlag']
                 }
                 self.wideCall(y, x, self.linkWH, net)
-                self.map.map[y][x].net = Game.getSortedList(y, x, net['fab'])
+                self.map.map[y][x].net = gamerules.getSortedList(y, x, net['fab'])
                 self.map.map[y][x].isGlobal = True
             elif buildingDefinition['type'] == 2:  # if fabricator building
                 net = {
@@ -553,7 +542,7 @@ class Game:
                     'global': False
                 }
                 self.wideCall(y, x, self.linkFab, net)
-                self.map.map[y][x].net = Game.getSortedList(y, x, net['fab'])
+                self.map.map[y][x].net = gamerules.getSortedList(y, x, net['fab'])
                 self.map.map[y][x].isGlobal = net['global']
 
     def linkFab(self, y, x, i):
