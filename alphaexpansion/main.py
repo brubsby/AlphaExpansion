@@ -4,11 +4,11 @@ import json
 import time
 import sys
 import functools
-import gamerules
+from alphaexpansion import gamerules
 
-from gamerules import RESOURCE_DEFINITIONS
-from gamerules import TILE_DEFINITIONS
-from gamerules import BUILDING_DEFINITIONS
+from alphaexpansion.gamerules import RESOURCE_DEFINITIONS
+from alphaexpansion.gamerules import TILE_DEFINITIONS
+from alphaexpansion.gamerules import BUILDING_DEFINITIONS
 
 
 class Tile(object):
@@ -61,8 +61,8 @@ class Tile(object):
                         mapToSet.map[y][xIndex].build != buildingId:
                     mapToSet.map[y][xIndex].addExtra(horizontal)
                 xIndex += 1
-            if buildingDefinition['type'] < 2:
-                game.buildingAmts[buildingId] += 1
+        if buildingDefinition['type'] < 2:
+            game.buildingAmts[buildingId] += 1
 
     def addExtra(self, extra):
         if not hasattr(self, 'extra'):
@@ -702,3 +702,15 @@ class Game:
                 # could try to do weird python method name execution but all buildings have null or this function
                 self.map.expandMap()
 
+    def gym_left_click(self, a, i, building_id):
+        if hasattr(self.map.map[a][i], 'build'):
+            self.upgrade_resource_gatherer(a, i, False)
+        else:
+            self.buy_building_or_click_terrain(a, i, building_id)
+
+    def gym_right_click(self, a, i):
+        if hasattr(self.map.map[a][i], 'build'):
+            if self.map.map[a][i].level > 0:
+                self.downgrade_building(a, i)
+            else:
+                self.sell_building(a, i)

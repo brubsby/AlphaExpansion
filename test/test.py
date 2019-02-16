@@ -1,13 +1,7 @@
-import main
+from alphaexpansion import main
 import os
 import unittest
 import json
-import gamerules
-
-from gamerules import RESOURCE_DEFINITIONS
-from gamerules import TILE_DEFINITIONS
-from gamerules import BUILDING_DEFINITIONS
-
 
 
 class ExpansionTest(unittest.TestCase):

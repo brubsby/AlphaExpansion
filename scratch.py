@@ -1,17 +1,13 @@
-import main
-import display
-import random
 import os
-import time
-import gamerules
 
-from gamerules import RESOURCE_DEFINITIONS
-from gamerules import TILE_DEFINITIONS
-from gamerules import BUILDING_DEFINITIONS
-
+from alphaexpansion import display, main
+import random
 
 display = display.GameDisplay()
 game = main.Game(seed=random.randint(0, 999999999999))
+# with open(os.path.join('test', 'save.txt'), 'r') as savefile:
+#     savestring = savefile.read()
+# game = main.Game.loadGame(savestring)
 display.run_game(game)
 
 '''
@@ -42,13 +38,6 @@ for building in thisgame.buildingAmts:
 print()
 if hasattr(thisgame.map.map[3][4], "build"):
     print("AH")
-
-
-with open(os.path.join('test', 'save.txt'), 'r') as savefile:
-    savestring = savefile.read()
-thisgame = main.Game.loadGame(savestring)
-
-thisdisplay.show_screen(thisgame)
 
 for i in range(int(len(thisgame.map.map))):  # / thisgame.map.CHUNK_HEIGHT)):
     thisdisplay.scroll_up_one_pixel()

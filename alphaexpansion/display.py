@@ -1,7 +1,6 @@
 import pygame
 
-import gamerules
-import main
+from alphaexpansion import main, gamerules
 import os
 
 
@@ -102,7 +101,7 @@ class GameDisplay():
 
     def load_images(self):
         for dirpath, dirnames, filenames in \
-                os.walk(os.path.join('img')):
+                os.walk(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'img')):
             for filename in filenames:
                 file_path = os.path.join(dirpath, filename)
                 self.images[os.path.split(dirpath)[1]][os.path.splitext(
@@ -131,7 +130,7 @@ class GameDisplay():
                         tile_x = event.pos[0] // GameDisplay.__TILE_SIZE
                         tile_y = event.pos[1] // GameDisplay.__TILE_SIZE
                         if tile_y < len(game.map.map):
-                            game.buy_building_or_click_terrain(tile_y, tile_x, selected_building)
+                            game.gym_left_click(tile_y, tile_x, selected_building)
                     else:
                         for i, (rect, building_definition) in enumerate(self.building_rectangles):
                             if rect.collidepoint(*event.pos):
@@ -144,7 +143,7 @@ class GameDisplay():
                         tile_x = event.pos[0] // GameDisplay.__TILE_SIZE
                         tile_y = event.pos[1] // GameDisplay.__TILE_SIZE
                         if tile_y < len(game.map.map):
-                            game.sell_building(tile_y, tile_x)
+                            game.gym_right_click(tile_y, tile_x)
 
             self.show_screen(game)
             frames_since_tick = (frames_since_tick + 1) % GameDisplay.__FRAME_RATE
