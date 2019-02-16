@@ -137,6 +137,8 @@ class Tile(object):
         del self.eff
 
     def sellBuild(self, sell, game):
+        if not hasattr(self, "build"):
+            return
         gamerules.refundFor(self.build, self.level, game)
         self.level -= 1
         if sell:
@@ -148,7 +150,7 @@ class Tile(object):
             i = self.y
             a = self.x
             self.remBuild(game.map, game)
-            game.buildings.remove(self) # TODO does this work?
+            game.buildings.remove(self)  # TODO does this work?
             game.wideLink(i, a, t)
             return t
         return 1 if game.opts['showLevel'] else 0
@@ -314,6 +316,7 @@ class Game:
             self.balDeficit[resourceId] = False
         self.buildingAmts = [0] * len(BUILDING_DEFINITIONS)
         self.init = seed
+        self.map.expandMap()
 
     def proceedTick(self):
         e = {}
@@ -346,7 +349,7 @@ class Game:
                         u.buf[incIdString], f)
                     p += 1
                 r = max(r, 0)
-                if building.isGlobal or 3 == buildingDefinition.type:
+                if building.isGlobal or 3 == buildingDefinition['type']:
                     self.balance[buildingDefinition['incId']] += r
                     r = 0
                 b = building.eff
@@ -657,7 +660,7 @@ class Game:
 
     def buy_building_or_click_terrain(self, a, i, building_id):
         if not hasattr(self.map.map[a][i], 'build'):
-            if -1 != building_id and self.map.map[a][i].tile & BUILDING_DEFINITIONS[building_id]['tile'] and gamerules.isAffordable(building_id, 0, self.balance):
+            if -1 != building_id and self.map.map[a][i].tile & BUILDING_DEFINITIONS[building_id]['tile'] and gamerules.isAffordable(building_id, 0, self):
                 gamerules.payFor(building_id, 0, self)
                 self.map.map[a][i].setBuilding(a, i, building_id, self.map, self)
                 self.buildings.append(self.map.map[a][i])
@@ -672,13 +675,13 @@ class Game:
                     # updateUI() # TODO
 
     def upgrade_resource_gatherer(self, a, i, upgrade_all):
-        if 2 == BUILDING_DEFINITIONS[self.map.map[a][i].build]['type'] and gamerules.isAffordable(self.map.map[a][i].build, self.map.map[a][i].level + 1):
+        if 2 == BUILDING_DEFINITIONS[self.map.map[a][i].build]['type'] and gamerules.isAffordable(self.map.map[a][i].build, self.map.map[a][i].level + 1, self):
             gamerules.payFor(self.map.map[a][i].build, self.map.map[a][i].level + 1, self)
             self.map.map[a][i].level += 1
             if upgrade_all:
                 for l in self.buildings:
                     if (l.build == self.map.map[a][i].build):
-                        while l.level < self.map.map[a][i].level and gamerules.isAffordable(l.build, l.level + 1, self.balance):
+                        while l.level < self.map.map[a][i].level and gamerules.isAffordable(l.build, l.level + 1, self):
                             gamerules.payFor(l.build, l.level + 1, self),
                             l.level += 1
             # opts.showLevel && drawContent(buildings[l].y, buildings[l].x) # TODO
