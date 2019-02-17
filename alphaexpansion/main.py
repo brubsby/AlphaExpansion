@@ -1,3 +1,4 @@
+import collections
 import math
 import base64
 import json
@@ -33,11 +34,11 @@ class Tile(object):
         self.build = buildingId
         self.level = 0
         self.net = []
-        self.buf = {}
+        self.buf = collections.OrderedDict()
         self.isGlobal = False
         self.eff = 0
         buildingDefinition = BUILDING_DEFINITIONS[buildingId]
-        if hasattr(buildingDefinition, 'decDef'):
+        if 'decDef' in buildingDefinition:
             for resourceId in buildingDefinition['decDef']:
                 self.buf[resourceId] = 0
         if buildingDefinition['type'] == 0 and \
@@ -307,9 +308,9 @@ class Game:
         self.map = Map(seed)
         self.tick = 0
         self.otick = 0  # offline ticks
-        self.balance = {}
-        self.balDiff = {}
-        self.balDeficit = {}
+        self.balance = collections.OrderedDict()
+        self.balDiff = collections.OrderedDict()
+        self.balDeficit = collections.OrderedDict()
         for resourceId in RESOURCE_DEFINITIONS:
             self.balance[resourceId] = 0
             self.balDiff[resourceId] = 0
@@ -319,7 +320,7 @@ class Game:
         self.map.expandMap()
 
     def proceedTick(self):
-        e = {}
+        e = collections.OrderedDict()
         for a in RESOURCE_DEFINITIONS:
             e[a] = self.balance[a]
             self.balDeficit[a] = False
@@ -328,13 +329,12 @@ class Game:
             if 2 == buildingDefinition['type']:
                 n = building.getIncAmt()
                 r = n
-                o = {}
+                o = collections.OrderedDict()
                 if 0 != buildingDefinition['decFlag']:
                     s = 1
                     for a in buildingDefinition['decDef']:
-                        astring = str(a)
                         o[a] = building.getBufSize(a, self.map)
-                        s = min(building.buf[astring] / o[a], s)
+                        s = min(building.buf[a] / o[a], s)
                     r *= s
                 d = r
                 p = 0
@@ -342,11 +342,11 @@ class Game:
                     u = building.net[p]
                     c = BUILDING_DEFINITIONS[u.build]
                     f = u.getBufSize(buildingDefinition['incId'], self.map)
-                    incIdString = str(buildingDefinition['incId'])
-                    u.buf[incIdString] += r
-                    r = u.buf[incIdString] - f
-                    u.buf[incIdString] = min(
-                        u.buf[incIdString], f)
+                    incId = buildingDefinition['incId']
+                    u.buf[incId] += r
+                    r = u.buf[incId] - f
+                    u.buf[incId] = min(
+                        u.buf[incId], f)
                     p += 1
                 r = max(r, 0)
                 if building.isGlobal or 3 == buildingDefinition['type']:
@@ -358,25 +358,22 @@ class Game:
                     pass  # TODO drawContent(building.y, building.x),
                 if 0 != buildingDefinition['decFlag']:
                     for a in buildingDefinition['decDef']:
-                        astring = str(a)
-                        building.buf[astring] -= o[a] * building.eff
+                        building.buf[a] -= o[a] * building.eff
             elif 1 == buildingDefinition['type']:
                 p = 0
                 while p < len(building.net):
                     u = building.net[p]
                     c = BUILDING_DEFINITIONS[u.build]
                     for a in c['decDef']:
-                        # TODO this logic seems weird
-                        astring = str(a)
                         if buildingDefinition['transFlag'] & a:
                             f = u.getBufSize(a, self.map)
-                            v = f - u.buf[astring]
+                            v = f - u.buf[a]
                             if v > self.balance[a]:
-                                u.buf[astring] += self.balance[a]
+                                u.buf[a] += self.balance[a]
                                 self.balance[a] = 0
                                 self.balDeficit[a] = True
                             else:
-                                u.buf[astring] = f
+                                u.buf[a] = f
                                 self.balance[a] -= v
                     p += 1
         for a in RESOURCE_DEFINITIONS:

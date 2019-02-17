@@ -1,5 +1,7 @@
+import collections
 import math
 import functools
+from odictliteral import odict
 
 
 def isAffordable(buildingId, t, game):
@@ -44,7 +46,7 @@ def getSortedList(y, x, toSort):
     return sorted(toSort, key=functools.cmp_to_key(tileComparator))
 
 
-TILE_DEFINITIONS = {  # renamed from tD
+TILE_DEFINITIONS = odict[  # renamed from tD
     1: {
         'name': "Peak",
         'img': "peak",
@@ -94,9 +96,9 @@ TILE_DEFINITIONS = {  # renamed from tD
         'border': 32,
         'res': -1
     }
-}
+]
 
-RESOURCE_DEFINITIONS = {  # renamed from rD
+RESOURCE_DEFINITIONS = odict[  # renamed from rD
     1: {
         'name': "Log",
         'col': "anyRes"
@@ -161,7 +163,7 @@ RESOURCE_DEFINITIONS = {  # renamed from rD
         'name': "Fiberglass",
         'col': "anyRes"
     }
-}
+]
 
 BUILDING_DEFINITIONS = [  # renamed from bD
     {

@@ -8,5 +8,5 @@ setup(
    author_email='TylerBusby333@gmail.com',
    packages=['alphaexpansion'],
    include_package_data=True,
-   install_requires=['pygame'],
+   install_requires=['pygame', 'odictliteral'],
 )
