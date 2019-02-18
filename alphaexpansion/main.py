@@ -285,10 +285,28 @@ class Map(object):
                 break
         return farSides
 
+    def init_map(self, seed):
+        local_seed = seed
+        mountains = 0
+        forests = 0
+        while mountains < 1 or forests < 1:
+            self.seed = local_seed
+            self.map = []
+            self.expandMap()
+            mountains = 0
+            forests = 0
+            for tile_list in self.map:
+                for tile in tile_list:
+                    if tile.tile == 1 or tile.tile == 2:
+                        mountains += 1
+                    if tile.tile == 4:
+                        forests += 1
+            local_seed += 1
+
 
 class Game:
 
-    def __init__(self, seed=0):
+    def __init__(self, seed=int(round(time.time() * 1000))):
         if hasattr(self, "map"):
             del self.map
         self.opts = {
@@ -316,8 +334,7 @@ class Game:
             self.balDiff[resourceId] = 0
             self.balDeficit[resourceId] = False
         self.buildingAmts = [0] * len(BUILDING_DEFINITIONS)
-        self.init = seed
-        self.map.expandMap()
+        self.map.init_map(seed)
 
     def proceedTick(self):
         e = collections.OrderedDict()
