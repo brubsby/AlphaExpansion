@@ -1,13 +1,15 @@
 import os
 
-from alphaexpansion import display, main
+from alphaexpansion import display, main, gamerules
 import random
 
 display = display.GameDisplay()
-# game = main.Game(seed=random.randint(0, 999999999999))
-with open(os.path.join('test', 'start_save.txt'), 'r') as savefile:
-    savestring = savefile.read()
-game = main.Game.loadGame(savestring)
+game = main.Game(seed=random.randint(0, 999999999999))
+for key in gamerules.RESOURCE_DEFINITIONS.keys():
+    game.balance[key] = 100
+# with open(os.path.join('test', 'start_save.txt'), 'r') as savefile:
+#     savestring = savefile.read()
+# game = main.Game.loadGame(savestring)
 display.run_game(game)
 
 '''

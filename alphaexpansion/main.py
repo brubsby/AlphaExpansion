@@ -562,7 +562,7 @@ class Game:
                     i['global'] = True
                 elif buildingDefinition['type'] > 1 and \
                         0 != buildingDefinition['decFlag'] and \
-                        i['res'] not in buildingDefinition['decDef'] \
+                        i['res'] in buildingDefinition['decDef'] \
                         and tile not in i['fab']:
                     i['fab'].append(tile)
 
