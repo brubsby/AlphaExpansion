@@ -683,10 +683,13 @@ class Game:
                 t = BUILDING_DEFINITIONS[building_id]['reach'] if 0 == BUILDING_DEFINITIONS[building_id]['type'] else 1
                 # wideDraw(a, i, t) # TODO
                 # updateUI() # TODO
+                return True
             else:
                 if -1 != TILE_DEFINITIONS[self.map.map[a][i].tile]['res']:
                     self.balance[TILE_DEFINITIONS[self.map.map[a][i].tile]['res']] += 1
                     # updateUI() # TODO
+                    return True
+        return False
 
     def upgrade_resource_gatherer(self, a, i, upgrade_all):
         if 2 == BUILDING_DEFINITIONS[self.map.map[a][i].build]['type'] and gamerules.isAffordable(self.map.map[a][i].build, self.map.map[a][i].level + 1, self):
@@ -716,15 +719,19 @@ class Game:
                 # could try to do weird python method name execution but all buildings have null or this function
                 self.map.expandMap()
 
+    # returns True if an action was actually performed, false otherwise
     def gym_left_click(self, a, i, building_id):
         if hasattr(self.map.map[a][i], 'build'):
             self.upgrade_resource_gatherer(a, i, False)
+            return True
         else:
-            self.buy_building_or_click_terrain(a, i, building_id)
+            return self.buy_building_or_click_terrain(a, i, building_id)
 
+    # returns True if an action was actually performed, false otherwise
     def gym_right_click(self, a, i):
         if hasattr(self.map.map[a][i], 'build'):
             if self.map.map[a][i].level > 0:
                 self.downgrade_building(a, i)
             else:
                 self.sell_building(a, i)
+        return False
