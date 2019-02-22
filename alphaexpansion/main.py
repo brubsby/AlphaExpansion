@@ -307,7 +307,7 @@ class Map(object):
 class Game:
 
     def __init__(self, seed=int(round(time.time() * 1000))):
-        if not seed:
+        if seed is None:
             seed = int(round(time.time() * 1000))
         if hasattr(self, "map"):
             del self.map
