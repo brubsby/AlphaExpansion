@@ -307,6 +307,8 @@ class Map(object):
 class Game:
 
     def __init__(self, seed=int(round(time.time() * 1000))):
+        if not seed:
+            seed = int(round(time.time() * 1000))
         if hasattr(self, "map"):
             del self.map
         self.opts = {
@@ -337,6 +339,7 @@ class Game:
         self.map.init_map(seed)
 
     def proceedTick(self):
+        self.tick += 1
         e = collections.OrderedDict()
         for a in RESOURCE_DEFINITIONS:
             e[a] = self.balance[a]
@@ -704,6 +707,8 @@ class Game:
             # opts.showLevel && drawContent(buildings[l].y, buildings[l].x) # TODO
             # drawContent(a, i) # TODO
             # updateUI() # TODO
+            return True
+        return False
 
     def activate_resource_sink(self, a, i):
         if 3 == BUILDING_DEFINITIONS[self.map.map[a][i].build]['type']:
@@ -722,8 +727,7 @@ class Game:
     # returns True if an action was actually performed, false otherwise
     def gym_left_click(self, a, i, building_id):
         if hasattr(self.map.map[a][i], 'build'):
-            self.upgrade_resource_gatherer(a, i, False)
-            return True
+            return self.upgrade_resource_gatherer(a, i, False)
         else:
             return self.buy_building_or_click_terrain(a, i, building_id)
 

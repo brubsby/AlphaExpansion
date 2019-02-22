@@ -7,6 +7,7 @@ display = display.GameDisplay()
 game = main.Game()
 for key in gamerules.RESOURCE_DEFINITIONS.keys():
     game.balance[key] = 100
+game.balance[2] = 1e30
 # with open(os.path.join('test', 'start_save.txt'), 'r') as savefile:
 #     savestring = savefile.read()
 # game = main.Game.loadGame(savestring)
