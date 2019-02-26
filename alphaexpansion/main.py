@@ -167,11 +167,11 @@ class Tile(object):
 
 class Map(object):
 
-    def __init__(self, seed=0, chunkWidth=28, chunkHeight=16):
+    def __init__(self, seed=0, width=28, height=16):
         self.map = []
         self.seed = seed
-        self.CHUNK_WIDTH = chunkWidth
-        self.CHUNK_HEIGHT = chunkHeight
+        self.CHUNK_WIDTH = width
+        self.CHUNK_HEIGHT = height
 
     def seededRandom(self):
         ret = 1e4 * math.sin(self.seed)
@@ -306,7 +306,7 @@ class Map(object):
 
 class Game:
 
-    def __init__(self, seed=int(round(time.time() * 1000))):
+    def __init__(self, seed=int(round(time.time() * 1000)), height=16, width=28):
         if seed is None:
             seed = int(round(time.time() * 1000))
         if hasattr(self, "map"):
@@ -325,7 +325,7 @@ class Game:
             if buildingDefinition['type'] < 2:
                 buildingDefinition['amt'] = 0
         self.buildings = []
-        self.map = Map(seed)
+        self.map = Map(seed, height=height, width=width)
         self.tick = 0
         self.otick = 0  # offline ticks
         self.balance = collections.OrderedDict()

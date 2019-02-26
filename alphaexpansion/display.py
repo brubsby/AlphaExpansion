@@ -19,13 +19,15 @@ class GameDisplay():
     __BUILDING_BUTTON_HEIGHT = 335
     __BUILDING_BUTTON_SIZE = 33
 
-    def __init__(self, human=False):
+    def __init__(self, human=False, width=__DEFAULT_CHUNK_WIDTH, height=__DEFAULT_CHUNK_HEIGHT):
         pygame.init()
         pygame.font.init()
+        self.chunk_width = width
+        self.chunk_height = height
         self.resource_font = pygame.font.SysFont("Liberation Serif", 15)
         self.title_font = pygame.font.SysFont("Liberation Serif Bold", 25)
         self.displaySurface = pygame.display.set_mode(
-            (GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE + GameDisplay.__INTERFACE_WIDTH,
+            (self.chunk_width * GameDisplay.__TILE_SIZE + GameDisplay.__INTERFACE_WIDTH,
                 GameDisplay.__INTERFACE_HEIGHT))
         self.images = {'tile': {}, 'building': {}}
         self.load_images()
@@ -46,7 +48,7 @@ class GameDisplay():
 
         text_height = GameDisplay.__INTERFACE_BORDER
         text_surface = self.title_font.render("Warehoused goods:", True, GameDisplay.__INTERFACE_FONT_COLOR)
-        self.displaySurface.blit(text_surface, (GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE
+        self.displaySurface.blit(text_surface, (self.chunk_width * GameDisplay.__TILE_SIZE
                                                 + GameDisplay.__INTERFACE_BORDER, text_height))
         text_height += text_surface.get_height()
         for resourceId, resourceData in gamerules.RESOURCE_DEFINITIONS.items():
@@ -55,14 +57,14 @@ class GameDisplay():
             text_surface = self.resource_font.render(resource_string, True, GameDisplay.__INTERFACE_FONT_COLOR)
             balance_surface = self.resource_font.render(resource_balance_string, True,
                                                         GameDisplay.__INTERFACE_RESOURCE_FONT_COLOR)
-            self.displaySurface.blit(text_surface, (GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE
+            self.displaySurface.blit(text_surface, (self.chunk_width * GameDisplay.__TILE_SIZE
                                                     + GameDisplay.__INTERFACE_BORDER, text_height))
-            self.displaySurface.blit(balance_surface, (GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE
+            self.displaySurface.blit(balance_surface, (self.chunk_width * GameDisplay.__TILE_SIZE
                                                        + GameDisplay.__INTERFACE_BORDER + text_surface.get_width(),
                                                        text_height))
             text_height += text_surface.get_height()
         text_surface = self.title_font.render("Constructions:", True, GameDisplay.__INTERFACE_FONT_COLOR)
-        self.displaySurface.blit(text_surface, (GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE
+        self.displaySurface.blit(text_surface, (self.chunk_width * GameDisplay.__TILE_SIZE
                                                 + GameDisplay.__INTERFACE_BORDER, text_height))
         for rect, building_definition in self.building_rectangles:
             image_rect = pygame.Rect(0, 0, GameDisplay.__TILE_SIZE, GameDisplay.__TILE_SIZE)
@@ -70,18 +72,17 @@ class GameDisplay():
             self.displaySurface.blit(self.images["building"][building_definition["img"]], image_rect)
         pygame.display.update()
 
-    @staticmethod
-    def create_building_rectangles():
+    def create_building_rectangles(self):
         rects = []
-        button_x = GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE + GameDisplay.__INTERFACE_BORDER
+        button_x = self.chunk_width * GameDisplay.__TILE_SIZE + GameDisplay.__INTERFACE_BORDER
         button_y = GameDisplay.__BUILDING_BUTTON_HEIGHT
         for b in gamerules.BUILDING_DEFINITIONS:
             rects.append((pygame.Rect(button_x, button_y, GameDisplay.__BUILDING_BUTTON_SIZE,
                                      GameDisplay.__BUILDING_BUTTON_SIZE), b))
             button_x += GameDisplay.__BUILDING_BUTTON_SIZE + 2
-            if button_x > GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE + GameDisplay.__INTERFACE_WIDTH \
+            if button_x > self.chunk_width * GameDisplay.__TILE_SIZE + GameDisplay.__INTERFACE_WIDTH \
                     - GameDisplay.__BUILDING_BUTTON_SIZE - GameDisplay.__INTERFACE_BORDER:
-                button_x = GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE + GameDisplay.__INTERFACE_BORDER
+                button_x = self.chunk_width * GameDisplay.__TILE_SIZE + GameDisplay.__INTERFACE_BORDER
                 button_y += GameDisplay.__BUILDING_BUTTON_SIZE + 2
         return rects
 
@@ -126,7 +127,7 @@ class GameDisplay():
                 if event.type == pygame.QUIT:
                     done = True
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if event.pos[0] < GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE:
+                    if event.pos[0] < self.chunk_width * GameDisplay.__TILE_SIZE:
                         tile_x = event.pos[0] // GameDisplay.__TILE_SIZE
                         tile_y = event.pos[1] // GameDisplay.__TILE_SIZE
                         if tile_y < len(game.map.map):
@@ -139,7 +140,7 @@ class GameDisplay():
                                 else:
                                     selected_building = i
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-                    if event.pos[0] < GameDisplay.__DEFAULT_CHUNK_WIDTH * GameDisplay.__TILE_SIZE:
+                    if event.pos[0] < self.chunk_width * GameDisplay.__TILE_SIZE:
                         tile_x = event.pos[0] // GameDisplay.__TILE_SIZE
                         tile_y = event.pos[1] // GameDisplay.__TILE_SIZE
                         if tile_y < len(game.map.map):
