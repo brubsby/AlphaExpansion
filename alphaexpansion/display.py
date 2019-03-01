@@ -108,8 +108,8 @@ class GameDisplay():
                 self.images[os.path.split(dirpath)[1]][os.path.splitext(
                     filename)[0]] = pygame.image.load(
                     file_path).convert()
-                print('%s loaded as %s' %
-                      (file_path, os.path.splitext(filename)[0]))
+                # print('%s loaded as %s' %
+                #       (file_path, os.path.splitext(filename)[0]))
         # hack for there only being one passage img
         for directions in ['', 'n', 'w', 's', 'e', 'nw', 'ns', 'ne', 'ws',
                            'we', 'se', 'nws', 'nwe', 'nse', 'wse', 'nwse']:
