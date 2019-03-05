@@ -32,11 +32,14 @@ class GameDisplay():
         self.images = {'tile': {}, 'building': {}}
         self.load_images()
         self.building_rectangles = self.create_building_rectangles()
+        self.human = human
         if human:
             game = main.Game()
             self.run_game(game)
 
     def show_screen(self, game):
+        if not self.human:
+            pygame.event.pump()
         self.displaySurface.fill(GameDisplay.__INTERFACE_BACKGROUND_COLOR)
         for y in range(len(game.map.map)):
             for x in range(game.map.CHUNK_WIDTH):
@@ -63,13 +66,14 @@ class GameDisplay():
                                                        + GameDisplay.__INTERFACE_BORDER + text_surface.get_width(),
                                                        text_height))
             text_height += text_surface.get_height()
-        text_surface = self.title_font.render("Constructions:", True, GameDisplay.__INTERFACE_FONT_COLOR)
-        self.displaySurface.blit(text_surface, (self.chunk_width * GameDisplay.__TILE_SIZE
-                                                + GameDisplay.__INTERFACE_BORDER, text_height))
-        for rect, building_definition in self.building_rectangles:
-            image_rect = pygame.Rect(0, 0, GameDisplay.__TILE_SIZE, GameDisplay.__TILE_SIZE)
-            image_rect.center = rect.center
-            self.displaySurface.blit(self.images["building"][building_definition["img"]], image_rect)
+        if self.human:
+            text_surface = self.title_font.render("Constructions:", True, GameDisplay.__INTERFACE_FONT_COLOR)
+            self.displaySurface.blit(text_surface, (self.chunk_width * GameDisplay.__TILE_SIZE
+                                                    + GameDisplay.__INTERFACE_BORDER, text_height))
+            for rect, building_definition in self.building_rectangles:
+                image_rect = pygame.Rect(0, 0, GameDisplay.__TILE_SIZE, GameDisplay.__TILE_SIZE)
+                image_rect.center = rect.center
+                self.displaySurface.blit(self.images["building"][building_definition["img"]], image_rect)
         pygame.display.update()
 
     def create_building_rectangles(self):
