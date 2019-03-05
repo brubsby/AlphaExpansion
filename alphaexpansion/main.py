@@ -285,11 +285,11 @@ class Map(object):
                 break
         return farSides
 
-    def init_map(self, seed):
+    def init_map(self, seed, min_mountains=1, min_forests=1):
         local_seed = seed
         mountains = 0
         forests = 0
-        while mountains < 1 or forests < 1:
+        while mountains < min_mountains or forests < min_forests:
             self.seed = local_seed
             self.map = []
             self.expandMap()
@@ -306,7 +306,7 @@ class Map(object):
 
 class Game:
 
-    def __init__(self, seed=int(round(time.time() * 1000)), height=16, width=28):
+    def __init__(self, seed=int(round(time.time() * 1000)), height=16, width=28, min_forests=1, min_mountains=1):
         if seed is None:
             seed = int(round(time.time() * 1000))
         if hasattr(self, "map"):
@@ -336,7 +336,7 @@ class Game:
             self.balDiff[resourceId] = 0
             self.balDeficit[resourceId] = False
         self.buildingAmts = [0] * len(BUILDING_DEFINITIONS)
-        self.map.init_map(seed)
+        self.map.init_map(seed, min_forests=min_forests, min_mountains=min_mountains)
 
     def proceedTick(self):
         self.tick += 1
@@ -734,8 +734,5 @@ class Game:
     # returns True if an action was actually performed, false otherwise
     def gym_right_click(self, a, i):
         if hasattr(self.map.map[a][i], 'build'):
-            if self.map.map[a][i].level > 0:
-                self.downgrade_building(a, i)
-            else:
-                self.sell_building(a, i)
+            self.sell_building(a, i)
         return False
